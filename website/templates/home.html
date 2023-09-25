@@ -1,0 +1,16 @@
+{% extends "base.html"%} {% block title %}Home{% endblock %} {% block subtitle %}Home Page{% endblock
+%}
+
+{% block content %}
+
+<div class="container-fluid">
+    {% for resident in resident_list%}
+    <div class="container mt-5">
+        <a href="/medication-list/{{ resident.id }}">
+            <div class="shadow p-3 mb-5 bg-white rounded">
+                <p>{{ resident.get_full_name() }}</p>
+            </div>
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}

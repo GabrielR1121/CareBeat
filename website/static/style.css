@@ -1,0 +1,33 @@
+.title-banner {
+    background-color: #003366;
+    border-bottom: 5px solid #C00000;
+
+}
+
+.title {
+    color: #FFEE99;
+    font-size: 58.6px;
+}
+
+
+.motto {
+    color: #FFFFFF;
+    font-size: 17px;
+}
+
+.subtitle {
+    background-color: #CCCCCC;
+}
+
+.graph-container {
+    display: inline-block;
+    width: 100%;
+    /* Adjust the width as needed */
+    margin: 10px;
+    /* Add margin for spacing */
+}
+
+.plotly-graph {
+    width: 100%;
+    /* Allow graphs to adapt to container width */
+}

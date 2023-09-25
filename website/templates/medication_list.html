@@ -1,0 +1,18 @@
+{% extends "base.html"%} {% block title %}Dashboard{% endblock %} {% block subtitle %} {{resident.get_full_name()}}
+Medication List {%
+endblock
+%}
+
+{% block content %}
+
+<div class="container-fluid">
+    {% for medication in medication_list%}
+    <div class="container mt-5">
+        <a href="/medication-dashboard/{{ medication.id }}">
+            <div class="shadow p-3 mb-5 bg-white rounded">
+                <p>{{ medication.name }}</p>
+            </div>
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}

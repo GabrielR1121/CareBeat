@@ -1,0 +1,117 @@
+{% extends "base.html"%} {% block title %}Dashboard{% endblock %} {% block subtitle %} {{medication.name}} Stats
+{%endblock%}
+{% block content %}
+
+
+<div class="row">
+    <div class="col-md-4">
+        <div class="graph-container">
+            <div class="plotly-graph">
+                <div id="chart1"></div>
+            </div>
+
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="graph-container">
+            <div class="plotly-graph">
+                <div id="chart2"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="graph-container">
+            <div class="plotly-graph">
+                <div id="chart3"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-4">
+        <div class="graph-container">
+            <div class="plotly-graph">
+                <div id="chart4"></div>
+            </div>
+
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="graph-container">
+            <div class="plotly-graph">
+                <div id="chart5"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="graph-container">
+            <div class="plotly-graph">
+                <div id="chart6"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<div class="row">
+    <div class="col-md-4">
+        <div class="graph-container">
+            <div class="plotly-graph">
+                <div id="chart7"></div>
+            </div>
+
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="graph-container">
+            <div class="plotly-graph">
+                <div id="chart8"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="graph-container">
+            <div class="plotly-graph">
+                <div></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+<script type="text/javascript">
+    var graphs1 = {{ graph1JSON | safe}};
+    Plotly.plot("chart1", graphs1, {});
+
+    var graphs2 = {{ graph2JSON | safe}};
+    Plotly.plot("chart2", graphs2, {});
+
+    var graphs3 = {{ graph3JSON | safe}};
+    Plotly.plot("chart3", graphs3, {});
+
+    var graphs4 = {{ graph4JSON | safe}};
+    Plotly.plot("chart4", graphs4, {});
+
+    var graphs5 = {{ graph5JSON | safe}};
+    Plotly.plot("chart5", graphs5, {});
+
+    var graphs6 = {{ graph6JSON | safe}};
+    Plotly.plot("chart6", graphs6, {});
+
+    var graphs7 = {{ graph7JSON | safe}};
+    Plotly.plot("chart7", graphs7, {});
+
+    var graphs8 = {{ graph8JSON | safe}};
+    Plotly.plot("chart8", graphs8, {});
+
+</script>
+
+{% endblock %}
