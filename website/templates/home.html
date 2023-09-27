@@ -4,12 +4,17 @@
 {% block content %}
 
 <div class="container-fluid">
-    {% for resident in resident_list%}
+    {% for resident in resident_list %}
     <div class="container mt-5">
-        <a href="/medication-list/{{ resident.id }}">
-            <div class="shadow p-3 mb-5 bg-white rounded">
-                <p>{{ resident.get_full_name() }}</p>
-            </div>
+        <form method="POST">
+            <input type="hidden" name="resident_id" value="{{ resident.id }}">
+            <a href="#" onclick="this.parentNode.submit(); return false;">
+                <div class="shadow p-3 mb-5 bg-white rounded profile-and-info">
+                    <img class="profile_picture" src="{{ resident.get_image() }}">
+                    <p class="profile_info">{{ resident.get_full_name() }}</p>
+                </div>
+            </a>
+        </form>
     </div>
     {% endfor %}
 </div>

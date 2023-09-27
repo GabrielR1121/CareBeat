@@ -9,3 +9,6 @@
 
 # Ignore the cache folder inside the website directory
 /website/__pycache__
+
+#Ignore the flask session folder
+/flask_session/

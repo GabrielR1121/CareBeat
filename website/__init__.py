@@ -1,4 +1,7 @@
 from flask import Flask
+from flask_session import Session
+
+
 
 def create_app():
     '''
@@ -11,5 +14,12 @@ def create_app():
     #Imports the views file and registers the routes inside the application
     from .views import views
     app.register_blueprint(views,url_prefix="/")
+
+    app.config['SESSION_TYPE'] = 'filesystem'
+    app.config['SESSION_PERMANENT'] = False
+    app.config['SESSION_USE_SIGNER'] = True
+    app.config['SESSION_KEY_PREFIX'] = 'your_session_prefix'
+
+    Session(app)
 
     return app

@@ -6,12 +6,15 @@ endblock
 {% block content %}
 
 <div class="container-fluid">
-    {% for medication in medication_list%}
+    {% for medication in medication_list %}
     <div class="container mt-5">
-        <a href="/medication-dashboard/{{ medication.id }}">
-            <div class="shadow p-3 mb-5 bg-white rounded">
-                <p>{{ medication.name }}</p>
-            </div>
+        <form method="post">
+            <input type="hidden" name="medication_id" value="{{ medication.id }}">
+            <a href="#" onclick="this.parentNode.submit(); return false;">
+                <div class="shadow p-3 mb-5 bg-white rounded">
+                    <p>{{ medication.name }}</p>
+                </div>
+        </form>
     </div>
     {% endfor %}
 </div>

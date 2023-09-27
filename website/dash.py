@@ -3,7 +3,7 @@ from website.config import db
 import pandas as pd 
 import plotly.express as px
 import plotly.graph_objects as go
-from datetime import timedelta
+
 
 
 def createGraphOne(medication, resident):
@@ -23,7 +23,7 @@ def createGraphOne(medication, resident):
     fig.update_xaxes(tickangle=55)
 
     #Update the title of the graph so its in the center
-    fig.update_layout(title_x=0.5,autosize=True)
+    fig.update_layout(title_x=0.5)
 
     return fig
 
@@ -45,9 +45,9 @@ def createGraphTwo(medication, resident):
     title = {'text': "{0} Progress".format(medication_name)},
     gauge = {'axis': {'range': [None, 100]} }))
 
-    #Updates the figure to allow auto resizing
-    fig.update_layout(autosize = True)
-
+    #Update the title of the graph so its in the center
+    fig.update_layout(title_x=0.5)
+    
     return fig
 
 
@@ -64,8 +64,10 @@ def createGraphThree(medication, resident):
     graph_df = pd.DataFrame.from_dict(db.get_graph3_data(medication, resident))
     #Using the created DataFrame create a figure that has the correct values
     fig = px.bar(graph_df, x='Date', y='Amount', title="Month")
-    #Update the figure to allow auto resizing
-    fig.update_layout(autosize=True)
+
+    #Update the title of the graph so its in the center
+    fig.update_layout(title_x=0.5)
+
     return fig
 
 
@@ -97,6 +99,10 @@ def createGraphFour(medication, resident):
                          showlegend=False,
                          line=dict(color='red')))
 
+
+    #Update the title of the graph so its in the center
+    fig.update_layout(title_x=0.5)
+
     return fig
 
 def createGraphFive(medication, resident):
@@ -126,6 +132,9 @@ def createGraphFive(medication, resident):
                          mode='lines',
                          showlegend=False,
                          line=dict(color='red')))
+    
+    #Update the title of the graph so its in the center
+    fig.update_layout(title_x=0.5)
 
     return fig
 
@@ -153,6 +162,9 @@ def createGraphSix(medication, resident):
                          showlegend=False,
                          line=dict(color='red')))
     
+    #Update the title of the graph so its in the center
+    fig.update_layout(title_x=0.5)
+    
     return fig
 
 def createGraphSeven(medication, resident):
@@ -163,10 +175,7 @@ def createGraphSeven(medication, resident):
     Returns: The figure object with all the correct data.
     """
     #Gets the values neeeded to create the table from the database
-    (medication_name, medication_taken, medication_total, start_date,pill_frequency) = db.get_graph7_data(medication, resident)
-
-    #Estimates when the medication will run out. this will mostlikely change in the future
-    estimated_end_date = start_date + timedelta(days=medication_total/pill_frequency)
+    (medication_name, medication_taken, medication_total) = db.get_graph7_data(medication, resident)
 
     #Creates the warning values and it auto adjusts depending on the medication
     danger_warning = medication_total * 0.2
@@ -186,6 +195,9 @@ def createGraphSeven(medication, resident):
                  {'range': [danger_warning, yellow_warning], 'color': "lightyellow"},
                  {'range': [yellow_warning, green_warning], 'color': "lightgreen"}
                   ]}))
+    #Update the title of the graph so its in the center
+    fig.update_layout(title_x=0.5)
+
     return fig
 
 def createGraphEight(medication, resident):
@@ -196,10 +208,10 @@ def createGraphEight(medication, resident):
     Returns: The figure object with all the correct data.
     """
     #Retrieves the data from the database
-    data = db.get_graph8_data(medication, resident)
-    prescribed_daily_dose = data[1]
-    prescribed_daily_dose = int(prescribed_daily_dose)
-    graph_df = pd.DataFrame.from_dict(data[0])
+    graph_df = pd.DataFrame.from_dict(db.get_graph8_data(medication,resident))
+
+    prescribed_daily_dose = int(medication.get_perscription_daily_dose())
+    
 
     #Creates a line chart with the given data
     fig = px.line(graph_df, x="Date", y="Dose (mg)", title="Daily Dose Average")
@@ -217,7 +229,8 @@ def createGraphEight(medication, resident):
                              showlegend=False,
                              line=dict(color='red')))
 
-
+    #Update the title of the graph so its in the center
+    fig.update_layout(title_x=0.5)
 
     return fig
 
