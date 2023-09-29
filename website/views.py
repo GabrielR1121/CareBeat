@@ -6,7 +6,6 @@ from . import dash
 from website.config import db
 
 views = Blueprint('views', __name__)
-resident_list = db.get_residents()
 
 #Gets Selected Resident from the pickle in the session
 def get_selected_resident():
@@ -22,6 +21,17 @@ def get_selected_medication():
         return pickle.loads(selected_medication_data)
     return None
 
+#Gets the Selected Caretaker from the pickle in the session
+def get_selected_caretaker():
+    selected_caretaker_data = session.get('selected_caretaker')
+    if selected_caretaker_data:
+        return pickle.loads(selected_caretaker_data)
+    return None
+
+#Sets the selected caretaker in a pickle and stores it in the session
+def set_selected_caretaker(caretaker):
+    session['selected_caretaker'] = pickle.dumps(caretaker)
+
 #Sets the selected resident in a pickle and stores it in the session
 def set_selected_resident(resident):
     session['selected_resident'] = pickle.dumps(resident)
@@ -32,8 +42,11 @@ def set_selected_medication(medication):
 
 #Verifies if the inputed id is in the designated lists
 def verify_id(id, type):
-    if type == 'Resident':
-        for resident in resident_list:
+    if type == 'Caretaker':
+        caretaker = db.verify_caretaker_login()
+        set_selected_caretaker(caretaker)
+    elif type == 'Resident':
+        for resident in get_selected_caretaker().get_resident_list():
             if int(id) == resident.id:
                 set_selected_resident(resident)
                 break
@@ -49,12 +62,13 @@ def verify_id(id, type):
 #Creates a route to the home page
 @views.route('/',methods=['Get','Post'])
 def home():
+    verify_id(0,"Caretaker")
     if request.method == 'POST':
         resident_id = request.form.get('resident_id')
         if resident_id:
             verify_id(resident_id,"Resident")
             return redirect(url_for('views.medication_list'))
-    return render_template("home.html", resident_list=resident_list)
+    return render_template("home.html", resident_list=get_selected_caretaker().get_resident_list())
 
 
 
