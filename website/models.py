@@ -1,6 +1,6 @@
-class Caree:
+class Resident:
     '''
-    Class for the Caree
+    Class for the Resident
     '''
 
     medication_list = list()
@@ -21,7 +21,7 @@ class Caree:
 
     def get_full_name(self):
         '''
-        Returns the full name of the Caree
+        Returns the full name of the Resident
         '''
         full_name = self.first_name
 
@@ -73,35 +73,77 @@ class Caretaker:
     '''
     Class for the Caretaker
     '''
-    def __init__(self, id):
+    resident_list = list()
+
+    def __init__(self, id, email, password,first_name,initial, paternal_last_name,maternal_last_name,phone_number,phone_provider):
         '''
         Constructor to assign the needed variables
         '''
         self.id = id
+        self.first_name = first_name
+        self.email = email
+        self.password = password
+        self.initial = initial
+        self.paternal_last_name = paternal_last_name
+        self.maternal_last_name = maternal_last_name
+        self.phone_number = phone_number
+        self.phone_provider = phone_provider
+
+    def get_full_name(self):
+        '''
+        Returns the full name of the Resident
+        '''
+        full_name = self.first_name
+
+        if(self.initial != None):
+            full_name += " "+self.initial
+
+        full_name += " "+self.paternal_last_name
+
+        if(self.maternal_last_name != None):
+            full_name += " "+self.maternal_last_name
+
+        return full_name
+    
+    def set_resident_list(self, list):
+        self.resident_list = list
+
+    def get_resident_list(self):
+        return self.resident_list
 
 
 class Medication:
     '''
     Class for the Medication
     '''
-    def __init__(self, id, name, dosage, pill_quantity, pill_frequency, start_date, perscription_date):
+    pills_list = list()
+    refill_list = list()
+
+    def __init__(self, id, name, dosage, pill_quantity, pill_frequency, refill_quantity,start_date, perscription_date):
         '''
         Constructor to assign the needed variables
-        TODO: create methods for prescription daily dose, estimated end date
         '''
         self.id = id
         self.name = name
         self.dosage = dosage
         self.pill_quantity = pill_quantity
         self.pill_frequency = pill_frequency
+        self.refill_quantity = refill_quantity
         self.start_date = start_date
         self.perscription_date = perscription_date
-    
-    def get_encrypted_id(self):
-        return self.encryptor.get_encrypted_id(self.id)
+        
 
-    def get_decrypted_id(self, encrypted_number):
-        return self.encryptor.get_decrypted_id(encrypted_number)
+    def set_pill_list(self, list):
+        self.pills_list = list
+    
+    def get_pill_list(self):
+        return self.pills_list
+    
+    def set_refill_list(self, list):
+        self.refill_list = list
+    
+    def get_refill_list(self):
+        return self.refill_list  
 
     def get_perscription_daily_dose(self):
         return self.pill_frequency * self.dosage
@@ -109,3 +151,25 @@ class Medication:
     def get_estimated_end_date(self):
         from datetime import timedelta
         return self.start_date + timedelta(days=self.pill_quantity/self.pill_frequency)
+    
+class Pill:
+    '''
+    Class for each pill
+    '''
+    def __init__(self,id,taken_timestamp):
+        '''
+        Constructor to assign the needed variables
+        '''
+        self.id = id
+        self.taken_timestamp = taken_timestamp
+
+class Refill:
+    '''
+    Class for each refill
+    '''
+    def __init__(self,id,taken_timestamp):
+        '''
+        Constructor to assign the needed variables
+        '''
+        self.id = id
+        self.taken_timestamp = taken_timestamp
