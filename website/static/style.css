@@ -17,6 +17,8 @@
 
 .subtitle {
     background-color: #CCCCCC;
+    display: flex;
+    align-items: center;
 }
 
 .graph-container {
@@ -43,4 +45,44 @@
 
 .profile_info {
     margin-left: 10px;
+}
+
+/* Center the form vertically and horizontally */
+.center-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+}
+
+.logo-login {
+    max-width: 20%;
+    max-height: 20%;
+    padding-top: 15px;
+}
+
+.custom-card {
+    width: 400px;
+    border: 1px solid #CCCCCC;
+    /* Adjust the width as needed */
+}
+
+.rounded-slightly {
+    border-radius: 5px;
+    /* Adjust the radius to make edges rounder */
+    border: 1px solid black;
+}
+
+.btn-custom {
+    background-color: #88CC99;
+    /* Custom button color */
+    color: #333333;
+    /* Text color */
+    font-size: 25px;
+    /* Custom font size */
+    font-weight: bolder;
+
+    border-radius: 10px;
+
+    border: 1px solid #88CC99;
 }

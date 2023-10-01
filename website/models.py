@@ -1,3 +1,5 @@
+from flask_login import UserMixin
+
 class Resident:
     '''
     Class for the Resident
@@ -69,13 +71,13 @@ class Resident:
 
 
 
-class Caretaker:
+class Caretaker(UserMixin):
     '''
     Class for the Caretaker
     '''
     resident_list = list()
 
-    def __init__(self, id, email, password,first_name,initial, paternal_last_name,maternal_last_name,phone_number,phone_provider):
+    def __init__(self, id, email, password,first_name,initial, paternal_last_name,maternal_last_name,phone_number,phone_provider,nursing_home_id):
         '''
         Constructor to assign the needed variables
         '''
@@ -88,6 +90,7 @@ class Caretaker:
         self.maternal_last_name = maternal_last_name
         self.phone_number = phone_number
         self.phone_provider = phone_provider
+        self.nursing_home_id = nursing_home_id
 
     def get_full_name(self):
         '''
@@ -111,6 +114,47 @@ class Caretaker:
     def get_resident_list(self):
         return self.resident_list
 
+class Nurse(UserMixin):
+    '''
+    Class for the Caretaker
+    '''
+    resident_list = list()
+
+    def __init__(self,id,password,designation,image,first_name,initial,paternal_last_name,maternal_last_name, nursing_home_id):
+        '''
+        Constructor to assign the needed variables
+        '''
+        self.id = id
+        self.password = password
+        self.designation = designation
+        self.image = image
+        self.first_name = first_name        
+        self.initial = initial
+        self.paternal_last_name = paternal_last_name
+        self.maternal_last_name = maternal_last_name
+        self.nursing_home_id = nursing_home_id
+
+    def get_full_name(self):
+        '''
+        Returns the full name of the Resident
+        '''
+        full_name = self.first_name
+
+        if(self.initial != None):
+            full_name += " "+self.initial
+
+        full_name += " "+self.paternal_last_name
+
+        if(self.maternal_last_name != None):
+            full_name += " "+self.maternal_last_name
+
+        return full_name
+    
+    def set_resident_list(self, list):
+        self.resident_list = list
+
+    def get_resident_list(self):
+        return self.resident_list
 
 class Medication:
     '''

@@ -1,4 +1,5 @@
 from flask import Blueprint, render_template, session,request,redirect,url_for
+from flask_login import  login_required,current_user
 import json
 import plotly
 import pickle
@@ -21,16 +22,16 @@ def get_selected_medication():
         return pickle.loads(selected_medication_data)
     return None
 
-#Gets the Selected Caretaker from the pickle in the session
-def get_selected_caretaker():
-    selected_caretaker_data = session.get('selected_caretaker')
-    if selected_caretaker_data:
-        return pickle.loads(selected_caretaker_data)
+#Gets the Selected user from the pickle in the session
+def get_selected_user():
+    selected_user_data = session.get('selected_user')
+    if selected_user_data:
+        return pickle.loads(selected_user_data)
     return None
 
-#Sets the selected caretaker in a pickle and stores it in the session
-def set_selected_caretaker(caretaker):
-    session['selected_caretaker'] = pickle.dumps(caretaker)
+#Sets the selected user in a pickle and stores it in the session
+def set_selected_user(user):
+    session['selected_user'] = pickle.dumps(user)
 
 #Sets the selected resident in a pickle and stores it in the session
 def set_selected_resident(resident):
@@ -42,11 +43,14 @@ def set_selected_medication(medication):
 
 #Verifies if the inputed id is in the designated lists
 def verify_id(id, type):
-    if type == 'Caretaker':
-        caretaker = db.verify_caretaker_login()
-        set_selected_caretaker(caretaker)
+    if type == 'User':
+        user = db.get_caretaker(current_user.id)
+        if user:
+            set_selected_user(user)
+        else:
+            set_selected_user(db.get_nurse(current_user.id))
     elif type == 'Resident':
-        for resident in get_selected_caretaker().get_resident_list():
+        for resident in get_selected_user().get_resident_list():
             if int(id) == resident.id:
                 set_selected_resident(resident)
                 break
@@ -61,19 +65,21 @@ def verify_id(id, type):
 
 #Creates a route to the home page
 @views.route('/',methods=['Get','Post'])
+@login_required
 def home():
-    verify_id(0,"Caretaker")
+    verify_id(0,"User")
     if request.method == 'POST':
         resident_id = request.form.get('resident_id')
         if resident_id:
             verify_id(resident_id,"Resident")
             return redirect(url_for('views.medication_list'))
-    return render_template("home.html", resident_list=get_selected_caretaker().get_resident_list())
+    return render_template("home.html", resident_list=get_selected_user().get_resident_list())
 
 
 
 #Creates a route to the medication list
 @views.route('/medication-list',methods=['Get','Post'])
+@login_required
 def medication_list():
     selected_resident = get_selected_resident()
     if selected_resident:
@@ -95,6 +101,7 @@ def medication_list():
 
 #Creates a route to the medication dashboard
 @views.route('/medication-dashboard',methods=['GET','POST'])
+@login_required
 def medication_dashboard():
     selected_resident = get_selected_resident()
     selected_medication = get_selected_medication()

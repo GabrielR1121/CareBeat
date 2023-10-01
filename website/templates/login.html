@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login Page</title>
+    <!-- Include Bootstrap CSS -->
+    <link href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="../static/style.css">
+    <link rel="icon" src="../static/images/Logo.png" type="image/x-icon">
+</head>
+
+<body>
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+    {% for category, message in messages %}
+    {% if category == 'error' %}
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        {{message}}
+        <button type="button" class="close" data-dismiss="alert">
+            <span aria-hidden="true">&times;</span>
+        </button>
+    </div>
+    {% else %}
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+        {{message}}
+        <button type="button" class="close" data-dismiss="alert">
+            <span aria-hidden="true">&times;</span>
+        </button>
+    </div>
+    {% endif %}
+    {% endfor %}
+    {% endif %}
+    {% endwith %}
+    <div class="container center-container">
+        <div class="card custom-card">
+            <!-- Your custom title banner -->
+            <div class="card-header title-banner">
+                <h1 class="text-center title">CareBeat</h1>
+                <h6 class="text-center motto">Your caring companion</h6>
+            </div>
+            <!-- Login Form -->
+            <div class="text-center">
+                <img src="../static/images/Logo.png" alt="CareBeat Logo" class="logo-login">
+            </div>
+
+            <div class="card-body">
+                <!-- Add the opening <form> tag here -->
+                <form action="/login" method="post">
+                    <div class="form-group">
+                        <label for="loginRole">Select Login Role:</label>
+                        <select class="form-control" id="loginRole" name="loginRole">
+                            <option value="caretaker">Caretaker</option>
+                            <option value="nurse">Nurse</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group" id="emailGroup">
+                        <label for="email">Email:</label>
+                        <input type="email" class="form-control" id="email" name="email" placeholder="Enter your email">
+                    </div>
+                    <div class="form-group" id="employeeIDGroup" style="display: none;">
+                        <label for="employeeID">Employee ID:</label>
+                        <input type="text" class="form-control" id="employeeID" name="employeeID"
+                            placeholder="Enter your employee ID">
+                    </div>
+                    <div class="form-group">
+                        <label for="password">Password:</label>
+                        <input type="password" class="form-control" id="password" name="password"
+                            placeholder="Enter your password">
+                    </div>
+                    <br>
+                    <button type="submit" class="btn btn-primary btn-block btn-custom">Login</button>
+                </form>
+                <!-- Add the closing </form> tag here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Include Bootstrap JS and Popper.js -->
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.3/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    <script>
+        document.getElementById("loginRole").addEventListener("change", function () {
+            var selectedRole = this.value;
+            if (selectedRole === "caretaker") {
+                document.getElementById("emailGroup").style.display = "block";
+                document.getElementById("employeeIDGroup").style.display = "none";
+            } else if (selectedRole === "nurse") {
+                document.getElementById("emailGroup").style.display = "none";
+                document.getElementById("employeeIDGroup").style.display = "block";
+            }
+        });
+    </script>
+</body>
+
+</html>
