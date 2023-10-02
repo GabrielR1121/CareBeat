@@ -79,7 +79,7 @@
     <div class="col-md-4">
         <div class="graph-container">
             <div class="plotly-graph">
-                <div></div>
+                <div id="chart9"></div>
             </div>
         </div>
     </div>
@@ -111,6 +111,9 @@
 
     var graphs8 = {{ graph8JSON | safe}};
     Plotly.plot("chart8", graphs8, {});
+
+    var graphs9 = {{ graph9JSON | safe}};
+    Plotly.plot("chart9", graphs9, {});
 
 </script>
 

@@ -116,11 +116,12 @@ def medication_dashboard():
         graph6JSON = json.dumps(dash.createGraphSix(selected_medication, selected_resident), cls=plotly.utils.PlotlyJSONEncoder)
         graph7JSON = json.dumps(dash.createGraphSeven(selected_medication, selected_resident), cls=plotly.utils.PlotlyJSONEncoder)
         graph8JSON = json.dumps(dash.createGraphEight(selected_medication, selected_resident), cls=plotly.utils.PlotlyJSONEncoder)
+        graph9JSON = json.dumps(dash.createGraphNine(selected_medication, selected_resident), cls=plotly.utils.PlotlyJSONEncoder)
 
         return render_template("medication_dashboard.html", 
             graph1JSON=graph1JSON, graph2JSON=graph2JSON, graph3JSON=graph3JSON,
             graph4JSON=graph4JSON, graph5JSON=graph5JSON, graph6JSON=graph6JSON,
-            graph7JSON=graph7JSON, graph8JSON=graph8JSON, 
+            graph7JSON=graph7JSON, graph8JSON=graph8JSON, graph9JSON=graph9JSON, 
             medication=selected_medication, resident=selected_resident)
     else:
         return "Resident or Medication not found", 404

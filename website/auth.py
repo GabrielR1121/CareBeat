@@ -30,10 +30,8 @@ def login():
             email = request.form.get('email')
             user = db.verify_login(email = email,id=None)
         elif login_role == 'nurse':
-            print("Im here")
             id = request.form.get('employeeID')
             user = db.verify_login(email = None, id = id)
-            print(user)
 
         if user:
             if user.password == password:

@@ -1,8 +1,8 @@
-from website.config.config import db_config
 from website.config import db
 import pandas as pd 
 import plotly.express as px
 import plotly.graph_objects as go
+from datetime import timedelta
 
 
 
@@ -233,6 +233,94 @@ def createGraphEight(medication, resident):
     fig.update_layout(title_x=0.5)
 
     return fig
+
+def createGraphNine(medication,resident):
+    '''
+    This Graph is meant to visualize a correct medication intake and what the patient is actually receiving. 
+    The dotted line represents a prediction of when the medication will end based on missed medications
+    '''
+    #Retrieves the data from the database
+    graph_df = pd.DataFrame.from_dict(db.get_graph9_data(medication, resident))
+
+    # Starts the medication one day before to ensure all graphs have a (0,0) starting coords
+    start_date = medication.start_date - timedelta(1)
+
+    #This is the estimated iniial start date if the treatment is administered perfectly.
+    estimated_end_date = medication.get_estimated_end_date().date()
+
+    #The total amount of pills this medication has 
+    total_pills = medication.pill_quantity
+    #The frequency at which each person needs to drink their medication
+    daily_pills = medication.pill_frequency
+    #List to store the expected dates in which the medication will be consumed
+    dates_expected = []
+    #The expected amount of cumulative pills the patient needs to consume daily
+    expected_cumulative_pills = []
+    #Stores the start date in order to reach the exact date the medication will end
+    current_date = start_date.date()
+    #Stores the exact number of daily cumulative pills in order to record the exact number
+    cumulative_pills =0
+
+    #This while loop is an application of numerical analysis where the goal is to reach the EXACT day and cumulative pills taken daily
+    # This is because if the frequency divided by the total is a fraction the amount of pills will either be over or under
+    # This ensures the count is exact.
+    while cumulative_pills < medication.pill_quantity and current_date <= estimated_end_date:
+            dates_expected.append(current_date)
+            expected_cumulative_pills.append(cumulative_pills)
+            cumulative_pills += daily_pills
+            current_date += timedelta(days=1)
+
+    # Add the final data point at the estimated end date
+    if current_date <= estimated_end_date:
+        dates_expected.append(estimated_end_date)
+        expected_cumulative_pills.append(medication.pill_quantity)
+
+    # Converts the Date dictionary into a list in order to add the starting (0,0) value
+    dates_actual = graph_df['Date'].tolist()
+    dates_actual.insert(0,start_date)
+    #Converts the Amount dictionary into a list in order to add the starting (0,0) value
+    actual_cumulative_pills = graph_df['Amount'].cumsum().tolist()
+    actual_cumulative_pills.insert(0, 0)
+
+    # Calculate a new estimated end date based on actual intake
+    # Gets a new end date based on the last date the medication was administered
+    actual_end_date = dates_actual[-1]
+    new_estimated_end_date = actual_end_date + timedelta(days=(total_pills - actual_cumulative_pills[-1]) / daily_pills)
+
+    # Create data points for the dotted line (new estimated end date)
+    dates_dotted = [actual_end_date + timedelta(days=i) for i in range((new_estimated_end_date - actual_end_date).days + 1)]
+    dotted_cumulative_pills = [actual_cumulative_pills[-1] + i * daily_pills for i in range(len(dates_dotted))]
+
+    # Create Plotly traces
+    trace_expected = go.Scatter(x=dates_expected, y=expected_cumulative_pills, mode='lines', name='Expected Intake')
+    trace_actual = go.Scatter(x=dates_actual, y=actual_cumulative_pills, mode='lines', name='Actual Intake')
+    trace_dotted = go.Scatter(x=dates_dotted, y=dotted_cumulative_pills, mode='lines+markers', name='New Estimated Intake')
+
+    # Calculate the deviation between the last two dates in "Expected" and "Actual"
+    last_expected_cumulative = expected_cumulative_pills[-1]
+    last_actual_cumulative = dotted_cumulative_pills[-1]
+    deviation = last_expected_cumulative - last_actual_cumulative
+
+    # Calculate the percentage deviation
+    percentage_deviation = (deviation / last_expected_cumulative) * 100
+
+    # Check if the percentage deviation is less than 5%
+    if percentage_deviation < 5:
+        print("Percentage deviation is less than 5%. The Deviation is {0}".format(percentage_deviation))
+    else:
+        print("Percentage deviation is 5% or higher. The Deviation is {0}".format(percentage_deviation))
+
+    # Create the layout for the chart
+    layout = go.Layout(
+        title='Medication Intake',
+        xaxis=dict(title='Date'),
+        yaxis=dict(title='Cumulative Pills Taken')
+    )
+
+    # Create the Plotly figure
+    fig = go.Figure(data=[trace_expected, trace_actual, trace_dotted], layout=layout)
+    return fig
+
 
     
 

@@ -194,7 +194,12 @@ class Medication:
     
     def get_estimated_end_date(self):
         from datetime import timedelta
-        return self.start_date + timedelta(days=self.pill_quantity/self.pill_frequency)
+        estimate = self.start_date + timedelta(days=self.pill_quantity/self.pill_frequency)
+        return estimate
+    
+    def get_start_date(self):
+        import calendar
+        return "{0}-{1}-{2}".format(self.start_date.day,calendar.month_abbr[self.start_date.month],self.start_date.year)
     
 class Pill:
     '''
