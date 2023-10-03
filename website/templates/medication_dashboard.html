@@ -85,6 +85,33 @@
     </div>
 </div>
 
+<div class="row">
+    <div class="col-md-4">
+        <div class="graph-container">
+            <div class="plotly-graph">
+                <div id="chart10"></div>
+            </div>
+
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="graph-container">
+            <div class="plotly-graph">
+                <div></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="graph-container">
+            <div class="plotly-graph">
+                <div></div>
+            </div>
+        </div>
+    </div>
+</div>
+
 
 <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
 <script type="text/javascript">
@@ -114,6 +141,9 @@
 
     var graphs9 = {{ graph9JSON | safe}};
     Plotly.plot("chart9", graphs9, {});
+
+    var graphs10 = {{ graph10JSON | safe}};
+    Plotly.plot("chart10", graphs10, {});
 
 </script>
 

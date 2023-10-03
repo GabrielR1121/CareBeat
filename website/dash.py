@@ -321,8 +321,68 @@ def createGraphNine(medication,resident):
     fig = go.Figure(data=[trace_expected, trace_actual, trace_dotted], layout=layout)
     return fig
 
+def createGraphTen(medication,resident):
+    graph_df = pd.DataFrame.from_dict(db.get_graph10_data(medication,resident))
+
+    days = list()
+    count = 1
+
+    current_value = graph_df['Dates'].iloc[0]
+
+    for dates in graph_df['Dates']:
+        if current_value == dates:
+            days.append(count)
+        else:
+            count+= 1
+            current_value = dates
+            days.append(count)
 
     
+    hours = graph_df['Hour']
+    concentrations = graph_df['Dose']
+    print(days)
+    print(hours)
+    print(concentrations)
 
 
+    # Initialize variables to store daily AUC and half-life values
+    daily_auc_values = []
+    daily_half_life_values = []
 
+    # Calculate AUC and half-life for each day
+    for day in range(1, max(days) + 1):
+        # Filter data for the current day
+        day_indices = [i for i, d in enumerate(days) if d == day]
+        day_hours = [hours[i] for i in day_indices]
+        day_concentrations = [concentrations[i] for i in day_indices]
+
+        # Calculate daily AUC using the trapezoidal rule
+        daily_auc = 0
+        for i in range(1, len(day_hours)):
+            delta_t = day_hours[i] - day_hours[i - 1]
+            avg_concentration = (day_concentrations[i] + day_concentrations[i - 1]) / 2
+            daily_auc += delta_t * avg_concentration
+
+        # Calculate daily half-life (assuming first-order kinetics)
+        daily_half_life = -0.693 / (int(day_concentrations[-1]) / int(day_concentrations[0]))
+
+        daily_auc_values.append(daily_auc)
+        daily_half_life_values.append(daily_half_life)
+
+    # Create a Plotly figure for the daily AUC values
+    fig = go.Figure()
+    fig.add_trace(go.Scatter(x=list(range(1, max(days) + 1)), y=daily_auc_values, mode='lines+markers', name='Daily AUC'))
+
+    # Configure the layout
+    fig.update_layout(
+        title='Daily AUC of Drug Concentration-Time Curve',
+        xaxis_title='Day',
+        yaxis_title='Daily AUC (mg*hr/mL)',
+    )
+
+
+    # Print the estimated daily half-life values
+    for day, half_life in zip(range(1, max(days) + 1), daily_half_life_values):
+        print(f"Day {day}: Estimated Half-Life = {half_life:.2f} hours")
+
+    return fig
