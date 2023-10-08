@@ -77,10 +77,11 @@ class Caretaker(UserMixin):
     '''
     resident_list = list()
 
-    def __init__(self, id, email, password,first_name,initial, paternal_last_name,maternal_last_name,phone_number,phone_provider,nursing_home_id):
+    def __init__(self,role,id, email, password,first_name,initial, paternal_last_name,maternal_last_name,phone_number,phone_provider,nursing_home_id):
         '''
         Constructor to assign the needed variables
         '''
+        self.role = role
         self.id = id
         self.first_name = first_name
         self.email = email
@@ -116,14 +117,15 @@ class Caretaker(UserMixin):
 
 class Nurse(UserMixin):
     '''
-    Class for the Caretaker
+    Class for the Nurse
     '''
     resident_list = list()
 
-    def __init__(self,id,password,designation,image,first_name,initial,paternal_last_name,maternal_last_name, nursing_home_id):
+    def __init__(self,role,id,password,designation,image,first_name,initial,paternal_last_name,maternal_last_name, nursing_home_id):
         '''
         Constructor to assign the needed variables
         '''
+        self.role = role
         self.id = id
         self.password = password
         self.designation = designation

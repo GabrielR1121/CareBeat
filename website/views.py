@@ -12,6 +12,7 @@ views = Blueprint('views', __name__)
 @login_required
 def home():
     verify_id(0, "User")
+    #TODO: When Nurse page is created add an if statement that checks if the role is caretaker or nurse and display the correct page
     if request.method == 'POST':
         resident_id = request.form.get('resident_id')
         if resident_id:
