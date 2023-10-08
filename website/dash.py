@@ -14,16 +14,17 @@ def createGraphOne(medication, resident):
     Returns: The figure object with all the correct data.
     """
 
-    #From the database retrive the needed data for this graph
-    graph_df = pd.DataFrame.from_dict(db.get_graph1_data(medication,resident))
-    #Using the created DataFrame create a figure that has the correct values
-    fig = px.line(graph_df,x="Date",y="Amount",title="Medication")
+    # From the database retrieve the needed data for this graph
+    graph_df = pd.DataFrame.from_dict(db.get_graph1_data(medication, resident))
 
-    #Update the x-axis so that the dates are slanted
+    # Create a scatter plot with lines connecting the dots
+    fig = go.Figure(data=go.Scatter(x=graph_df["Date"], y=graph_df["Amount"], mode='lines+markers', name="Medication"))
+
+    # Update the x-axis so that the dates are slanted
     fig.update_xaxes(tickangle=55)
 
-    #Update the title of the graph so its in the center
-    fig.update_layout(title_x=0.5)
+    # Update the title of the graph so it's in the center
+    fig.update_layout(title="Medication", title_x=0.5)
 
     return fig
 
@@ -37,6 +38,7 @@ def createGraphTwo(medication, resident):
     #Gets the values neeeded to create the table from the database
     (medication_name,medication_taken,medication_total) = db.get_graph2_data(medication,resident)
 
+    print()
     #Creates a gauge chart
     fig =  go.Figure(go.Indicator(
     mode = "gauge+number",
@@ -201,6 +203,7 @@ def createGraphSeven(medication, resident):
     return fig
 
 def createGraphEight(medication, resident):
+    from decimal import Decimal
     """
     Method to create the Daily Dose Average chart using the amount of doses taken and the dates
     This graph demonstrates how consistent the daily dosage goals are being met
@@ -210,7 +213,8 @@ def createGraphEight(medication, resident):
     #Retrieves the data from the database
     graph_df = pd.DataFrame.from_dict(db.get_graph8_data(medication,resident))
 
-    prescribed_daily_dose = int(medication.get_perscription_daily_dose())
+    prescribed_daily_dose = medication.get_perscription_daily_dose()
+    print("Perscribed_d_dose" + str(prescribed_daily_dose))
     
 
     #Creates a line chart with the given data
@@ -224,7 +228,7 @@ def createGraphEight(medication, resident):
                              line=dict(color='red')))
     #Adds a line that shows the min expected dosage per day
     fig.add_trace(go.Scatter(x=graph_df["Date"], 
-                             y=[prescribed_daily_dose*0.8 for x in range(graph_df["Date"].size)], 
+                             y=[Decimal(prescribed_daily_dose)*Decimal(0.8) for x in range(graph_df["Date"].size)], 
                              mode='lines',
                              showlegend=False,
                              line=dict(color='red')))
@@ -287,6 +291,11 @@ def createGraphNine(medication,resident):
     actual_end_date = dates_actual[-1]
     new_estimated_end_date = actual_end_date + timedelta(days=(total_pills - actual_cumulative_pills[-1]) / daily_pills)
 
+    # Check if the new estimated end date is in the past
+    if new_estimated_end_date < actual_end_date:
+        # If it's in the past, set it to the actual end date
+        new_estimated_end_date = actual_end_date
+
     # Create data points for the dotted line (new estimated end date)
     dates_dotted = [actual_end_date + timedelta(days=i) for i in range((new_estimated_end_date - actual_end_date).days + 1)]
     dotted_cumulative_pills = [actual_cumulative_pills[-1] + i * daily_pills for i in range(len(dates_dotted))]
@@ -321,36 +330,40 @@ def createGraphNine(medication,resident):
     fig = go.Figure(data=[trace_expected, trace_actual, trace_dotted], layout=layout)
     return fig
 
-def createGraphTen(medication,resident):
-    graph_df = pd.DataFrame.from_dict(db.get_graph10_data(medication,resident))
+def createGraphTen(medication, resident):
+    graph_df = pd.DataFrame.from_dict(db.get_graph10_data(medication, resident))
 
-    days = list()
-    count = 1
+    days = []  # Use an empty list to store day numbers
+    count = 0  # Start counting from 0
 
-    current_value = graph_df['Dates'].iloc[0]
+    import datetime
+
+    # Check if the DataFrame is empty
+    if graph_df.empty:
+        current_value = datetime.date.today()
+        current_hour = datetime.datetime.now().hour
+        days = [0]
+        hours = [current_hour]
+        concentrations = [0]
+    else:
+        current_value = graph_df['Dates'].iloc[0]
+        hours = graph_df['Hour']
+        concentrations = [float(conc) for conc in graph_df['Dose']]  # Convert to float
 
     for dates in graph_df['Dates']:
         if current_value == dates:
             days.append(count)
         else:
-            count+= 1
+            count += 1
             current_value = dates
             days.append(count)
-
-    
-    hours = graph_df['Hour']
-    concentrations = graph_df['Dose']
-    print(days)
-    print(hours)
-    print(concentrations)
-
 
     # Initialize variables to store daily AUC and half-life values
     daily_auc_values = []
     daily_half_life_values = []
 
     # Calculate AUC and half-life for each day
-    for day in range(1, max(days) + 1):
+    for day in range(max(days) + 1):  # Adjust the loop to start at 0
         # Filter data for the current day
         day_indices = [i for i, d in enumerate(days) if d == day]
         day_hours = [hours[i] for i in day_indices]
@@ -364,14 +377,20 @@ def createGraphTen(medication,resident):
             daily_auc += delta_t * avg_concentration
 
         # Calculate daily half-life (assuming first-order kinetics)
-        daily_half_life = -0.693 / (int(day_concentrations[-1]) / int(day_concentrations[0]))
+        try:
+            if day_concentrations[0] != 0:  # Avoid division by zero
+                daily_half_life = -0.693 / (day_concentrations[-1] / day_concentrations[0])
+            else:
+                daily_half_life = 0
+        except ZeroDivisionError:
+            daily_half_life = 0
 
         daily_auc_values.append(daily_auc)
         daily_half_life_values.append(daily_half_life)
 
     # Create a Plotly figure for the daily AUC values
     fig = go.Figure()
-    fig.add_trace(go.Scatter(x=list(range(1, max(days) + 1)), y=daily_auc_values, mode='lines+markers', name='Daily AUC'))
+    fig.add_trace(go.Scatter(x=list(range(max(days) + 1)), y=daily_auc_values, mode='lines+markers', name='Daily AUC'))
 
     # Configure the layout
     fig.update_layout(
@@ -380,9 +399,8 @@ def createGraphTen(medication,resident):
         yaxis_title='Daily AUC (mg*hr/mL)',
     )
 
-
     # Print the estimated daily half-life values
-    for day, half_life in zip(range(1, max(days) + 1), daily_half_life_values):
+    for day, half_life in enumerate(daily_half_life_values):
         print(f"Day {day}: Estimated Half-Life = {half_life:.2f} hours")
 
     return fig
