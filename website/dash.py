@@ -2,7 +2,9 @@ from website.config import db
 import pandas as pd 
 import plotly.express as px
 import plotly.graph_objects as go
-from datetime import timedelta
+from datetime import timedelta,datetime
+import math
+from decimal import Decimal,getcontext
 
 
 
@@ -37,8 +39,6 @@ def createGraphTwo(medication, resident):
     """
     #Gets the values neeeded to create the table from the database
     (medication_name,medication_taken,medication_total) = db.get_graph2_data(medication,resident)
-
-    print()
     #Creates a gauge chart
     fig =  go.Figure(go.Indicator(
     mode = "gauge+number",
@@ -214,7 +214,6 @@ def createGraphEight(medication, resident):
     graph_df = pd.DataFrame.from_dict(db.get_graph8_data(medication,resident))
 
     prescribed_daily_dose = medication.get_perscription_daily_dose()
-    print("Perscribed_d_dose" + str(prescribed_daily_dose))
     
 
     #Creates a line chart with the given data
@@ -238,58 +237,39 @@ def createGraphEight(medication, resident):
 
     return fig
 
-def createGraphNine(medication,resident):
-    '''
-    This Graph is meant to visualize a correct medication intake and what the patient is actually receiving. 
-    The dotted line represents a prediction of when the medication will end based on missed medications
-    '''
-    #Retrieves the data from the database
+
+
+def createGraphNine(medication, resident):
+    # Retrieve the data from the database
     graph_df = pd.DataFrame.from_dict(db.get_graph9_data(medication, resident))
 
-    # Starts the medication one day before to ensure all graphs have a (0,0) starting coords
-    start_date = medication.start_date - timedelta(1)
+    # Start the medication one day before to ensure all graphs have a (0,0) starting coords
+    start_date = (medication.start_date - timedelta(1)).date()
 
-    #This is the estimated iniial start date if the treatment is administered perfectly.
+    # This is the estimated initial start date if the treatment is administered perfectly.
     estimated_end_date = medication.get_estimated_end_date().date()
+    print(estimated_end_date)
 
-    #The total amount of pills this medication has 
+    # The total amount of pills this medication has
     total_pills = medication.pill_quantity
-    #The frequency at which each person needs to drink their medication
+    # The frequency at which each person needs to take their medication
     daily_pills = medication.pill_frequency
-    #List to store the expected dates in which the medication will be consumed
-    dates_expected = []
-    #The expected amount of cumulative pills the patient needs to consume daily
-    expected_cumulative_pills = []
-    #Stores the start date in order to reach the exact date the medication will end
-    current_date = start_date.date()
-    #Stores the exact number of daily cumulative pills in order to record the exact number
-    cumulative_pills =0
 
-    #This while loop is an application of numerical analysis where the goal is to reach the EXACT day and cumulative pills taken daily
-    # This is because if the frequency divided by the total is a fraction the amount of pills will either be over or under
-    # This ensures the count is exact.
-    while cumulative_pills < medication.pill_quantity and current_date <= estimated_end_date:
-            dates_expected.append(current_date)
-            expected_cumulative_pills.append(cumulative_pills)
-            cumulative_pills += daily_pills
-            current_date += timedelta(days=1)
+    # Create data points for the expected intake (a straight line)
+    dates_expected = [start_date + timedelta(days=i) for i in range((estimated_end_date - start_date).days)]  # Include the endpoint
+    expected_cumulative_pills = [i * daily_pills for i in range(len(dates_expected))]
 
-    # Add the final data point at the estimated end date
-    if current_date <= estimated_end_date:
-        dates_expected.append(estimated_end_date)
-        expected_cumulative_pills.append(medication.pill_quantity)
-
-    # Converts the Date dictionary into a list in order to add the starting (0,0) value
+    # Convert the Date dictionary into a list to add the starting (0,0) value
     dates_actual = graph_df['Date'].tolist()
-    dates_actual.insert(0,start_date)
-    #Converts the Amount dictionary into a list in order to add the starting (0,0) value
+    dates_actual.insert(0, start_date)
+    # Convert the Amount dictionary into a list to add the starting (0,0) value
     actual_cumulative_pills = graph_df['Amount'].cumsum().tolist()
     actual_cumulative_pills.insert(0, 0)
 
     # Calculate a new estimated end date based on actual intake
-    # Gets a new end date based on the last date the medication was administered
     actual_end_date = dates_actual[-1]
     new_estimated_end_date = actual_end_date + timedelta(days=(total_pills - actual_cumulative_pills[-1]) / daily_pills)
+    print(new_estimated_end_date)
 
     # Check if the new estimated end date is in the past
     if new_estimated_end_date < actual_end_date:
@@ -301,7 +281,7 @@ def createGraphNine(medication,resident):
     dotted_cumulative_pills = [actual_cumulative_pills[-1] + i * daily_pills for i in range(len(dates_dotted))]
 
     # Create Plotly traces
-    trace_expected = go.Scatter(x=dates_expected, y=expected_cumulative_pills, mode='lines', name='Expected Intake')
+    trace_expected = go.Scatter(x=dates_expected, y=expected_cumulative_pills, mode='lines+markers', name='Expected Intake')  # Add markers to the expected intake
     trace_actual = go.Scatter(x=dates_actual, y=actual_cumulative_pills, mode='lines', name='Actual Intake')
     trace_dotted = go.Scatter(x=dates_dotted, y=dotted_cumulative_pills, mode='lines+markers', name='New Estimated Intake')
 
@@ -331,76 +311,63 @@ def createGraphNine(medication,resident):
     return fig
 
 def createGraphTen(medication, resident):
-    graph_df = pd.DataFrame.from_dict(db.get_graph10_data(medication, resident))
-
-    days = []  # Use an empty list to store day numbers
-    count = 0  # Start counting from 0
-
-    import datetime
-
-    # Check if the DataFrame is empty
-    if graph_df.empty:
-        current_value = datetime.date.today()
-        current_hour = datetime.datetime.now().hour
-        days = [0]
-        hours = [current_hour]
-        concentrations = [0]
+    graph_data = db.get_graph10_data(medication, resident)
+    up_to = len(graph_data['DateTime'])-1
+    # Define the time intervals as datetime objects
+    if graph_data['DateTime']:
+        start_time = graph_data['DateTime'][0]  # Start time
+        end_time = graph_data['DateTime'][up_to]   # End time
+        intake_timestamps = graph_data['DateTime'][:up_to]
     else:
-        current_value = graph_df['Dates'].iloc[0]
-        hours = graph_df['Hour']
-        concentrations = [float(conc) for conc in graph_df['Dose']]  # Convert to float
+        intake_timestamps = []
+        start_time = datetime(2023, 1, 1, 0, 0)  # Start time
+        end_time = datetime(2023, 1, 7, 0, 0)
 
-    for dates in graph_df['Dates']:
-        if current_value == dates:
-            days.append(count)
-        else:
-            count += 1
-            current_value = dates
-            days.append(count)
+    # Create a list of timestamps from start_time to end_time at the specified interval
+    time_stamps = [start_time + timedelta(hours=i) for i in range(0, int((end_time - start_time).total_seconds() // 3600))]
+    # Define the drug's half-life in hours
+    half_life_hours = 14  # Adjust the half-life as needed
 
-    # Initialize variables to store daily AUC and half-life values
-    daily_auc_values = []
-    daily_half_life_values = []
+    # Calculate the decay rate based on half-life
+    decay_rate = math.log(1/2) / half_life_hours
 
-    # Calculate AUC and half-life for each day
-    for day in range(max(days) + 1):  # Adjust the loop to start at 0
-        # Filter data for the current day
-        day_indices = [i for i, d in enumerate(days) if d == day]
-        day_hours = [hours[i] for i in day_indices]
-        day_concentrations = [concentrations[i] for i in day_indices]
+    # Define your intake timestamps as datetime objects
+    
 
-        # Calculate daily AUC using the trapezoidal rule
-        daily_auc = 0
-        for i in range(1, len(day_hours)):
-            delta_t = day_hours[i] - day_hours[i - 1]
-            avg_concentration = (day_concentrations[i] + day_concentrations[i - 1]) / 2
-            daily_auc += delta_t * avg_concentration
+    # Create a function to calculate drug concentration over time with spikes for each intake
+    def calculate_concentration(time_stamps, decay_rate, intake_timestamps):
+        concentration = []
+        current_concentration = 0.0
 
-        # Calculate daily half-life (assuming first-order kinetics)
-        try:
-            if day_concentrations[0] != 0:  # Avoid division by zero
-                daily_half_life = -0.693 / (day_concentrations[-1] / day_concentrations[0])
-            else:
-                daily_half_life = 0
-        except ZeroDivisionError:
-            daily_half_life = 0
+        # Define a time step factor to control the rate of decay
+        time_step_factor = 0.9  # Adjust as needed; smaller values result in slower decay
 
-        daily_auc_values.append(daily_auc)
-        daily_half_life_values.append(daily_half_life)
+        for t in time_stamps:
+            # Check if there is an intake event at this time
+            if any(
+                t.hour == ts.hour and t.day == ts.day and t.month == ts.month and t.year == ts.year
+                for ts in intake_timestamps
+            ):
+                current_concentration = 100.0  # Spike to 100% when intake occurs
 
-    # Create a Plotly figure for the daily AUC values
+            # Apply decay with a controlled time step
+            current_concentration *= math.exp(decay_rate * time_step_factor)
+            concentration.append(current_concentration)
+
+        return concentration
+
+    # Calculate drug concentrations over time using the updated function
+    concentration_values = calculate_concentration(time_stamps, decay_rate, intake_timestamps)
+
+    # Create a Plotly chart to visualize the drug concentration over time
     fig = go.Figure()
-    fig.add_trace(go.Scatter(x=list(range(max(days) + 1)), y=daily_auc_values, mode='lines+markers', name='Daily AUC'))
 
-    # Configure the layout
+    fig.add_trace(go.Scatter(x=time_stamps, y=concentration_values, mode='lines', name='Drug Concentration'))
+
+    # Set the y-axis label to indicate it's in percentages
     fig.update_layout(
-        title='Daily AUC of Drug Concentration-Time Curve',
-        xaxis_title='Day',
-        yaxis_title='Daily AUC (mg*hr/mL)',
+        title='Drug Concentration Over Time',
+        xaxis_title='Time',
+        yaxis_title='Concentration (%)',
     )
-
-    # Print the estimated daily half-life values
-    for day, half_life in enumerate(daily_half_life_values):
-        print(f"Day {day}: Estimated Half-Life = {half_life:.2f} hours")
-
     return fig
