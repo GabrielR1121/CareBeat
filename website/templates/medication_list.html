@@ -14,12 +14,50 @@ endblock
     <div class="container mt-5">
         <form method="post">
             <input type="hidden" name="medication_id" value="{{ medication.id }}">
-            <a href="#" onclick="this.parentNode.submit(); return false;">
-                <div class="shadow p-3 mb-5 bg-white rounded">
-                    <p>{{ medication.name }}</p>
-                </div>
-        </form>
+            <div class="shadow p-3 mb-5 bg-white rounded d-flex justify-content-between align-items-center">
+                <p>
+                    <a href="#" onclick="submitForm(this); return false;">
+                        {{ medication.name }}
+                    </a>
+                </p>
+                {% if user.role == "Nurse" %}
+                <button type="button" class="btn btn-success"
+                    onclick="administerMedication({{ medication.id }})">Administer Medication</button>
+            </div>
+            {% endif %}
     </div>
-    {% endfor %}
+    </form>
+
 </div>
+{% endfor %}
+</div>
+
+<script>
+    function administerMedication(medicationId) {
+        // Retrieve the button value
+        console.log("I am here")
+        // Perform an AJAX request to trigger a Flask method
+        $.ajax({
+            url: '/administer-medication',
+            type: 'POST',
+            data: {
+                action: 'administer_medication',
+                medication_id: medicationId
+            },
+            success: function (response) {
+                // Handle the response if needed
+                console.log(response);
+            },
+            error: function (error) {
+                // Handle errors if needed
+                console.error(error);
+            }
+        });
+    }
+
+    function submitForm(anchorElement) {
+        var form = anchorElement.closest('form');
+        form.submit();
+    }
+</script>
 {% endblock %}

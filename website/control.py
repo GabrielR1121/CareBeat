@@ -63,6 +63,15 @@ def verify_id(id, type):
                     set_selected_medication(medication)
                     break
 
+def med_administered(med_id):
+    for medication in get_selected_resident().get_medication_list():
+        if int(med_id) == medication.id:
+            db.insert_into_pill(medication,get_selected_resident(),get_selected_user())
+            print("medication was administered")
+            break
+
+
+
 def create_med_list_pdf(resident):
     # Create a buffer to store the PDF data
     buffer = BytesIO()

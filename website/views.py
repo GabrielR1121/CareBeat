@@ -3,7 +3,7 @@ from flask_login import login_required
 import json
 import plotly
 from . import dash
-from .control import get_selected_resident, verify_id, get_selected_user,get_selected_medication, create_med_list_pdf
+from .control import get_selected_resident, verify_id, get_selected_user,get_selected_medication, create_med_list_pdf,med_administered
 
 views = Blueprint('views', __name__)
 
@@ -34,7 +34,7 @@ def medication_list():
                 verify_id(medication_id, "Medication")
                 return redirect(url_for('views.medication_dashboard'))
 
-        return render_template('medication_list.html', resident=selected_resident, medication_list=medication_list)
+        return render_template('medication_list.html', user=get_selected_user() ,resident=selected_resident, medication_list=medication_list)
     else:
         return "Resident not found", 404
     
@@ -74,3 +74,10 @@ def generate_pdf():
     response.headers['Content-Type'] = 'application/pdf'
     response.headers['Content-Disposition'] = 'inline; filename={0} Medication List.pdf'.format(get_selected_resident().get_full_name())
     return response
+
+
+@views.route('/administer-medication',methods=['POST'])
+def administer():
+    medication_id = request.form.get('medication_id')
+    med_administered(medication_id)
+    return "Medication Administered Successfully"

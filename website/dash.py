@@ -4,7 +4,6 @@ import plotly.express as px
 import plotly.graph_objects as go
 from datetime import timedelta,datetime
 import math
-from decimal import Decimal,getcontext
 
 
 
@@ -15,18 +14,18 @@ def createGraphOne(medication, resident):
     Receives: 2 objects of Medication and resident.
     Returns: The figure object with all the correct data.
     """
+    graph_df = pd.DataFrame.from_dict(db.get_graph1_data(medication,resident))
 
-    # From the database retrieve the needed data for this graph
-    graph_df = pd.DataFrame.from_dict(db.get_graph1_data(medication, resident))
+    # Now, your graph_df DataFrame will have all dates in order with "Amount" values, including the missing ones set to 0.
 
-    # Create a scatter plot with lines connecting the dots
+    # Create the scatter plot with lines connecting the dots
     fig = go.Figure(data=go.Scatter(x=graph_df["Date"], y=graph_df["Amount"], mode='lines+markers', name="Medication"))
 
     # Update the x-axis so that the dates are slanted
     fig.update_xaxes(tickangle=55)
 
     # Update the title of the graph so it's in the center
-    fig.update_layout(title="Medication", title_x=0.5)
+    fig.update_layout(title="Medication Intake by Pill Count", title_x=0.5)
 
     return fig
 
@@ -65,7 +64,7 @@ def createGraphThree(medication, resident):
     #Retrieve the required data from the database
     graph_df = pd.DataFrame.from_dict(db.get_graph3_data(medication, resident))
     #Using the created DataFrame create a figure that has the correct values
-    fig = px.bar(graph_df, x='Date', y='Amount', title="Month")
+    fig = px.bar(graph_df, x='Date', y='Amount', title="Medication Intake Amount By Month")
 
     #Update the title of the graph so its in the center
     fig.update_layout(title_x=0.5)
@@ -84,26 +83,27 @@ def createGraphFour(medication, resident):
     """
     #From the database retrive the needed data for this graph
     graph_df = pd.DataFrame.from_dict(db.get_graph4_data(medication, resident))
+
     #Using the created DataFrame create a figure that has the correct values
     fig = px.line(graph_df,x="Date", y="Average", title= "Daily Medication Adherence Rate") 
     
     #Adds an aditional line to the graph to demonstrate the best expected adherence rate
-    fig.add_trace(go.Scatter(x=graph_df["Date"], 
-                         y=[90 for _ in range(graph_df["Date"].size)], 
-                         mode='lines',
-                         name='Target Adherence',
-                         line=dict(color='red')))
+    #fig.add_trace(go.Scatter(x=graph_df["Date"], 
+    #                     y=[90 for _ in range(graph_df["Date"].size)], 
+    #                     mode='lines',
+    #                     name='Target Adherence',
+    #                     line=dict(color='red')))
     
     #Adds an aditional line to the graph to demonstrate the least expected adherence rate
     fig.add_trace(go.Scatter(x=graph_df["Date"], 
                          y=[80 for _ in range(graph_df["Date"].size)], 
                          mode='lines',
-                         showlegend=False,
+                         name='Target Adherence',
                          line=dict(color='red')))
 
 
     #Update the title of the graph so its in the center
-    fig.update_layout(title_x=0.5)
+    fig.update_layout(title_x=0.2)
 
     return fig
 
@@ -119,24 +119,24 @@ def createGraphFive(medication, resident):
     graph_df = pd.DataFrame.from_dict(db.get_graph5_data(medication, resident))
 
     #Using the created DataFrame create a figure that has the correct values
-    fig = px.line(graph_df, x="Week", y="Average", title="Weekly MAR")
+    fig = px.line(graph_df, x="Week", y="Average", title="Weekly Medication Adherence Rate")
 
     #Adds an aditional line to the graph to demonstrate the best expected adherence rate
-    fig.add_trace(go.Scatter(x=graph_df["Week"], 
-                         y=[90 for _ in range(graph_df["Week"].size)], 
-                         mode='lines',
-                         name='Target Adherence',
-                         line=dict(color='red')))
+    #fig.add_trace(go.Scatter(x=graph_df["Week"], 
+    #                     y=[90 for _ in range(graph_df["Week"].size)], 
+    #                     mode='lines',
+    #                     name='Target Adherence',
+    #                     line=dict(color='red')))
     
     #Adds an aditional line to the graph to demonstrate the least expected adherence rate
     fig.add_trace(go.Scatter(x=graph_df["Week"], 
                          y=[80 for _ in range(graph_df["Week"].size)], 
                          mode='lines',
-                         showlegend=False,
+                         name='Target Adherence',
                          line=dict(color='red')))
     
     #Update the title of the graph so its in the center
-    fig.update_layout(title_x=0.5)
+    fig.update_layout(title_x=0.15)
 
     return fig
 
@@ -150,22 +150,22 @@ def createGraphSix(medication, resident):
     #From the database retrive the needed data for this graph
     graph_df = pd.DataFrame.from_dict(db.get_graph6_data(medication, resident))
     #Using the created DataFrame create a figure that has the correct values
-    fig = px.line(graph_df, x='Date', y='Amount', title="Month")
+    fig = px.line(graph_df, x='Date', y='Average', title="Monthly Medication Adherence Rate")
      #Adds an aditional line to the graph to demonstrate the best expected adherence rate
-    fig.add_trace(go.Scatter(x=graph_df["Date"], 
-                         y=[90 for _ in range(graph_df["Date"].size)], 
-                         mode='lines',
-                         name='Target Adherence',
-                         line=dict(color='red')))
+     #fig.add_trace(go.Scatter(x=graph_df["Date"], 
+     #                    y=[90 for _ in range(graph_df["Date"].size)], 
+     #                    mode='lines',
+     #                    name='Target Adherence',
+     #                    line=dict(color='red')))
      #Adds an aditional line to the graph to demonstrate the least expected adherence rate
     fig.add_trace(go.Scatter(x=graph_df["Date"], 
                          y=[80 for _ in range(graph_df["Date"].size)], 
                          mode='lines',
-                         showlegend=False,
+                         name='Target Adherence',
                          line=dict(color='red')))
     
     #Update the title of the graph so its in the center
-    fig.update_layout(title_x=0.5)
+    fig.update_layout(title_x=0.15)
     
     return fig
 
@@ -303,7 +303,8 @@ def createGraphNine(medication, resident):
     layout = go.Layout(
         title='Medication Intake',
         xaxis=dict(title='Date'),
-        yaxis=dict(title='Cumulative Pills Taken')
+        yaxis=dict(title='Cumulative Pills Taken'),
+        title_x =0.30
     )
 
     # Create the Plotly figure
@@ -369,5 +370,6 @@ def createGraphTen(medication, resident):
         title='Drug Concentration Over Time',
         xaxis_title='Time',
         yaxis_title='Concentration (%)',
+        title_x=0.25
     )
     return fig
