@@ -2,7 +2,6 @@
 <html>
 
 <head>
-
     <meta charset="utf-8" name="viewport" content="width=device-width,initial-scale=1" />
 
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css"
@@ -13,31 +12,92 @@
 
     <link rel="stylesheet" href="../static/style.css">
 
-    <title>{% block title %}Not Named{% endblock %}</title>
+    <style>
+        /* Custom CSS for the left-side flyout menu */
+        .flyout-menu {
+            position: fixed;
+            top: 0;
+            left: -300px;
+            /* Initially hidden to the left */
+            width: 300px;
+            /* Adjust the width as needed */
+            height: 100%;
+            background-color: #333;
+            /* Background color of the flyout menu */
+            transition: left 0.3s;
+            /* Transition effect for smooth sliding */
+            z-index: 999;
+            /* Ensure it's above other content */
+        }
 
+        .flyout-menu ul {
+            list-style-type: none;
+            padding: 0;
+        }
+
+        .flyout-menu a {
+            display: block;
+            color: #fff;
+            text-decoration: none;
+            padding: 10px 20px;
+        }
+
+        .flyout-menu a:hover {
+            background-color: #555;
+        }
+
+        /* Custom style for the toggle button */
+        .toggle-button {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background: none;
+            border: none;
+            color: #000;
+            font-size: 24px;
+            /* Increase the font size for a bigger button */
+            padding: 8px;
+            /* Increase the padding for more space around the button */
+            cursor: pointer;
+        }
+    </style>
+
+    <title>{% block title %}Not Named{% endblock %}</title>
 </head>
 
 <body>
-
     <div class="container-fluid">
+
+
+        <!-- Left-side flyout menu -->
+        <div class="flyout-menu" id="flyoutMenu">
+            <ul>
+                <li class="flyout-item" id="medicationList" {% if showMedicationList %}style="display: block;" {% else
+                    %}style="display: none;" {% endif %}>
+                    <a href="/generate-medication-list">Medication List</a>
+                </li>
+                <li>
+                    <a href="/logout">Logout</a>
+                </li>
+            </ul>
+        </div>
+
         <div class="row justify-content-center title-banner">
+            <!-- Hamburger menu icon to toggle the flyout menu -->
+            <button class="toggle-button" id="toggleMenuButton">
+                &#9776; <!-- Hamburger icon -->
+            </button>
             <div class="col-auto">
                 <h1 class="text-center title">CareBeat</h1>
                 <h6 class="text-center motto">Your caring companion</h6>
             </div>
         </div>
 
-
         <div class="row justify-content-center subtitle">
             <div class="col-auto text-center">
                 <h3>{% block subtitle %}[Template]{% endblock %}</h3>
             </div>
         </div>
-
-        <div class="text-right">
-            <a href="/logout">Logout</a>
-        </div>
-
     </div>
 
     <div class="container-fluid">
@@ -46,9 +106,7 @@
         {% endblock %}
     </div>
 
-
-
-
+    <!-- Include Bootstrap JavaScript and any other scripts you need -->
     <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js"
         integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN"
         crossorigin="anonymous"></script>
@@ -62,6 +120,32 @@
         crossorigin="anonymous"></script>
 
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+    <script>
+        // JavaScript to handle the flyout menu toggle
+        $(document).ready(function () {
+            $("#toggleMenuButton").click(function (e) {
+                e.stopPropagation(); // Prevent event propagation
+                $("#flyoutMenu").toggleClass("show");
+                // Change the left position to open/close the flyout
+                if ($("#flyoutMenu").hasClass("show")) {
+                    $("#flyoutMenu").css("left", "0");
+                } else {
+                    $("#flyoutMenu").css("left", "-300px");
+                }
+            });
+
+            // Close the flyout menu when clicking outside of it
+            $(document).click(function (e) {
+                if (!$(e.target).closest("#flyoutMenu, #toggleMenuButton").length) {
+                    if ($("#flyoutMenu").hasClass("show")) {
+                        $("#flyoutMenu").removeClass("show");
+                        $("#flyoutMenu").css("left", "-300px");
+                    }
+                }
+            });
+        });
+    </script>
 </body>
 
 </html>

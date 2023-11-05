@@ -18,7 +18,7 @@ def home():
         if resident_id:
             verify_id(resident_id, "Resident")
             return redirect(url_for('views.medication_list'))
-    return render_template("home.html", resident_list=get_selected_user().get_resident_list())
+    return render_template("home.html",showMedicationList = False ,resident_list=get_selected_user().get_resident_list())
 
 #Creates a route to the medication list
 @views.route('/medication-list', methods=['GET', 'POST'])
@@ -34,7 +34,7 @@ def medication_list():
                 verify_id(medication_id, "Medication")
                 return redirect(url_for('views.medication_dashboard'))
 
-        return render_template('medication_list.html', user=get_selected_user() ,resident=selected_resident, medication_list=medication_list)
+        return render_template('medication_list.html',showMedicationList = True ,user=get_selected_user() ,resident=selected_resident, medication_list=medication_list)
     else:
         return "Resident not found", 404
     
@@ -61,7 +61,7 @@ def medication_dashboard():
             graph1JSON=graph1JSON, graph2JSON=graph2JSON, graph3JSON=graph3JSON,
             graph4JSON=graph4JSON, graph5JSON=graph5JSON, graph6JSON=graph6JSON,
             graph7JSON=graph7JSON, graph8JSON=graph8JSON, graph9JSON=graph9JSON,
-            graph10JSON=graph10JSON, medication=selected_medication, resident=selected_resident)
+            graph10JSON=graph10JSON, medication=selected_medication, resident=selected_resident,showMedicationList = False)
     else:
         return "Resident or Medication not found", 404
     

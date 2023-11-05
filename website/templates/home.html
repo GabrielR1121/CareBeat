@@ -4,18 +4,26 @@
 {% block content %}
 
 <div class="container-fluid">
-    {% for resident in resident_list %}
-    <div class="container mt-5">
-        <form method="POST">
-            <input type="hidden" name="resident_id" value="{{ resident.id }}">
-            <a href="#" onclick="this.parentNode.submit(); return false;">
-                <div class="shadow p-3 mb-5 bg-white rounded profile-and-info">
-                    <img class="profile_picture" src="{{ resident.get_image() }}">
-                    <p class="profile_info">{{ resident.get_full_name() }}</p>
+    <div class="d-flex justify-content-center">
+        <div class="card-deck">
+            {% for resident in resident_list %}
+            <div class="card" style="max-width: 250px;">
+                <img class="card-img-top img-fluid" src="{{ resident.get_image() }}" alt="{{ resident.get_full_name }}">
+                <div class="card-body">
+                    <h5 class="card-title">{{ resident.get_full_name() }}</h5>
+                    <p class="card-text">Age: {{ resident.get_age() }}</p>
+                    <p class="card-text">Room Location: {{ resident.room_location }}</p>
+                    <p class="card-text">Active Prescriptions: {{ resident.active_prescriptions }}</p>
+                    <p class="card-text">Upcoming Medications: {{ resident.upcoming_medications }}</p>
                 </div>
-            </a>
-        </form>
-    </div>
-    {% endfor %}
-</div>
-{% endblock %}
+                <form method="POST">
+                    <input type="hidden" name="resident_id" value="{{ resident.id }}">
+                    <div class="card-footer d-flex justify-content-center">
+                        <a href="#" onclick="this.parentNode.parentNode.submit(); return false;"
+                            class="btn btn-primary">View Details</a>
+                    </div>
+                </form>
+            </div>
+            {% endfor %}
+        </div>
+        {% endblock %}

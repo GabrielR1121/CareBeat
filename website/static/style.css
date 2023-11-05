@@ -86,3 +86,21 @@
 
     border: 1px solid #88CC99;
 }
+
+/* Custom CSS for the flyout effect */
+.flyout-modal {
+    overflow: hidden;
+    background-color: rgba(0, 0, 0, 0.5);
+    /* Background overlay color */
+}
+
+.modal-dialog-flyout {
+    max-width: 300px;
+    /* Adjust this value to control the width of the flyout */
+    transform: translateX(-100%);
+    transition: transform 0.3s ease-in-out;
+}
+
+.flyout-modal.show .modal-dialog-flyout {
+    transform: translateX(0);
+}
