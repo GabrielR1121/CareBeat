@@ -12,3 +12,7 @@
 
 #Ignore the flask session folder
 /flask_session/
+
+#Ignore medical report graph images
+/website/static/images/bp_image.png
+/website/static/images/glucose_image.png
