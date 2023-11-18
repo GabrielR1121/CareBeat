@@ -72,9 +72,29 @@
         <!-- Left-side flyout menu -->
         <div class="flyout-menu" id="flyoutMenu">
             <ul>
+                <li>
+                    <a href="/">Home</a>
+                </li>
+
+                <li class="flyout-item" id="addMedication" {% if showAddMedication %}style="display: block;" {% else
+                    %}style="display: none;" {% endif %}>
+                    <a href="/add-medication-page">Add New Medication</a>
+                </li>
                 <li class="flyout-item" id="medicationList" {% if showMedicationList %}style="display: block;" {% else
                     %}style="display: none;" {% endif %}>
                     <a href="/generate-medication-list">Medication List</a>
+                </li>
+                <li class="flyout-item" id="wellness_check" {% if showMedicationList %}style="display: block;" {% else
+                    %}style="display: none;" {% endif %}>
+                    <a href="/perform-wellness-check">Perform Wellness Check</a>
+                </li>
+                <li class="flyout-item" id="add_resident" {% if add_resident %}style="display: block;" {% else
+                    %}style="display: none;" {% endif %}>
+                    <a href="/add-new-caretaker">Add New Resident</a>
+                </li>
+                <li class="flyout-item" id="medication_report" {% if showMedicationList %}style="display: block;" {%
+                    else %}style="display: none;" {% endif %}>
+                    <a href="/generate-medication-report">Medication Report</a>
                 </li>
                 <li>
                     <a href="/logout">Logout</a>

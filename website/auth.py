@@ -22,19 +22,28 @@ def login():
     next_url = request.args.get('next')
     user = None
     if request.method == 'POST':
+        #Receive role and password from submitted HTML Form
         login_role = request.form.get('loginRole')
         password = request.form.get('password')
-
+        
+        #If the role is caretaker
         if login_role == 'caretaker':
+            #Retrieve the email
             email = request.form.get('email')
+            #Validate the data
             user = db.verify_login(email = email,id=None)
+
+            #Else if User role is nurse
         elif login_role == 'nurse':
+            #Retrieve Employee Id
             id = request.form.get('employeeID')
+            #Validate Data
             user = db.verify_login(email = None, id = id)
 
         if user:
             if user.password == password:
                 flash("Logged in succesfully")
+                #Method used internally in Flask-Login Library to login user
                 login_user(user)
                 
                 return redirect(next_url or url_for('views.home'))

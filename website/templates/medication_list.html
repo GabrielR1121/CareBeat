@@ -1,37 +1,70 @@
-{% extends "base.html"%} {% block title %}Dashboard{% endblock %} {% block subtitle %} {{resident.get_full_name()}}
-Medication List {%
-endblock
-%}
+{% extends "base.html"%}
+{% block title %}Dashboard{% endblock %}
+{% block subtitle %} {{resident.get_full_name()}} Medication List {% endblock %}
 
 {% block content %}
 
 <div class="container-fluid">
-    {% for medication in medication_list %}
-    <div class="container mt-5">
-        <form method="post">
-            <input type="hidden" name="medication_id" value="{{ medication.id }}">
-            <div class="shadow p-3 mb-5 bg-white rounded d-flex justify-content-between align-items-center">
-                <p>
-                    <a href="#" onclick="submitForm(this); return false;">
-                        {{ medication.name }}
-                    </a>
-                </p>
-                {% if user.role == "Nurse" %}
-                <button type="button" class="btn btn-success"
-                    onclick="administerMedication({{ medication.id }})">Administer Medication</button>
-            </div>
-            {% endif %}
+    <div class="row">
+        {% for medication in medication_list %}
+        <div class="col-md-4">
+            <form method="post">
+                <input type="hidden" name="medication_id" value="{{ medication.id }}">
+                <div class="card mx-auto my-4"
+                    style="max-width: 18rem; {% if medication.priority == 0 %}border: 3px solid red;{% else %}border: 2px solid gray;{% endif %}">
+                    <div class="card-body text-center p-0">
+                        <h5 class="card-title bg-dark text-white p-2 mb-2">
+                            <a class="text-white" href="#" onclick="submitForm(this); return false;">
+                                {{ medication.name }}
+                            </a>
+                        </h5>
+                        <p class="card-text mb-2">Dosage: {{ medication.dosage }} mg</p>
+                        <p class="card-text mb-2">Pill Quantity: {{ medication.pill_quantity }}</p>
+                        <p class="card-text mb-2">Start Date: {{ medication.start_date }}</p>
+                        <p class="card-text mb-2">Diagnosis: <br>
+                            {% for diagnosis in medication.get_diagnosis_list() %}
+                            {{ diagnosis.name }}
+                            {% if not loop.last %}, {% endif %}
+                            {% endfor %}
+                        </p>
+                        <p class="card-text mb-2">Refill Quantity: {{ medication.refill_quantity }}/3</p>
+                        <p class="card-text mb-2">Time to Next Dose: <br>{{ medication.time_until_next_dose() }}</p>
+                        <hr>
+                        {% if user.role == "Nurse" %}
+                        <button type="button" class="btn btn-success mb-3 rounded"
+                            onclick="administerMedication({{ medication.id }})">Administer Medication</button>
+                        {% endif %}
+                    </div>
+                </div>
+            </form>
+        </div>
+        {% endfor %}
     </div>
-    </form>
 
+    <div class="modal fade" id="customPopupModal" tabindex="-1" role="dialog" aria-labelledby="popupModalLabel"
+        aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered" role="document">
+            <div class="modal-content custom-modal">
+                <!-- Apply the custom CSS class here -->
+                <div class="modal-header">
+                    <h5 class="modal-title" id="popupModalLabel">Please Contact Medical Professional!</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body" id="customAlertMessage"></div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">OK</button>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
-{% endfor %}
-</div>
-
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script> <!-- Include jQuery -->
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"></script>
+<!-- Include Bootstrap JS -->
 <script>
     function administerMedication(medicationId) {
-        // Retrieve the button value
-        console.log("I am here")
         // Perform an AJAX request to trigger a Flask method
         $.ajax({
             url: '/administer-medication',
@@ -43,6 +76,7 @@ endblock
             success: function (response) {
                 // Handle the response if needed
                 console.log(response);
+                location.reload()
             },
             error: function (error) {
                 // Handle errors if needed
@@ -55,5 +89,34 @@ endblock
         var form = anchorElement.closest('form');
         form.submit();
     }
+
+    // Function to show a custom alert pop-up
+    function showCustomAlert(message) {
+        $('#customAlertMessage').html(message);
+        $('#customPopupModal').modal('show');
+    }
+    
+    // Check your conditions and trigger the pop-up
+    {% if resident.conduct_periodic_wellness_checks() != 0 and(temp_check or weight_check or systolic_bp_check or diastolic_bp_check or heart_rate_check or glucose_check) %}
+    var alertMessages = [];
+    {% if temp_check %}
+    alertMessages.push("Temperature was: {{latestVitals.temperature}}. Value is recommended between {{min_temp}} and {{max_temp}}");
+    {% endif %}
+    {% if weight_check %}
+    alertMessages.push("BMI was: {{resident_BMI}}. Value is recommended between {{min_BMI}} and {{max_BMI}}");
+    {% endif %}
+    {% if True %}
+    alertMessages.push("An anomaly with Blood Pressure patterns for this patient has been detected. Wellness Checks have been incremented and are now required until values return to baseline. <br> Remaining Wellness Checks for today: {{resident.conduct_periodic_wellness_checks()}}");
+    {% endif %}
+    {% if heart_rate_check %}
+    alertMessages.push("Heart Rate was {{latestVitals.heart_rate}}. Value is recommended between {{min_heart_rate}} and {{max_heart_rate}}");
+    {% endif %}
+    {% if glucose_check %}
+    alertMessages.push("Glucose was {{latestVitals.glucose}}. Value is recommended between {{min_glucose}} and {{max_glucose}}");
+    {% endif %}
+
+    var combinedMessage = alertMessages.join("<br><br>");
+    showCustomAlert(combinedMessage);
+    {% endif %}
 </script>
 {% endblock %}

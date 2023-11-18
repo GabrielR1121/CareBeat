@@ -104,3 +104,9 @@
 .flyout-modal.show .modal-dialog-flyout {
     transform: translateX(0);
 }
+
+.custom-modal {
+    border: 2px solid red;
+    border-radius: 10px;
+    /* Optional: Add rounded corners */
+}

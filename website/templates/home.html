@@ -7,23 +7,30 @@
     <div class="d-flex justify-content-center">
         <div class="card-deck">
             {% for resident in resident_list %}
-            <div class="card" style="max-width: 250px;">
+            <div class="card"
+                style="max-width: 250px; {% if resident.get_active_flags()|length > 0 %}border: 2px solid red;{% else %}border: 2px solid gray; {% endif %}">
                 <img class="card-img-top img-fluid" src="{{ resident.get_image() }}" alt="{{ resident.get_full_name }}">
                 <div class="card-body">
                     <h5 class="card-title">{{ resident.get_full_name() }}</h5>
                     <p class="card-text">Age: {{ resident.get_age() }}</p>
-                    <p class="card-text">Room Location: {{ resident.room_location }}</p>
-                    <p class="card-text">Active Prescriptions: {{ resident.active_prescriptions }}</p>
-                    <p class="card-text">Upcoming Medications: {{ resident.upcoming_medications }}</p>
+                    <p class="card-text">Active Flag:
+                        {% if resident.get_active_flags() %}
+                        {{ resident.get_active_flags()|join(", ") }}
+                        {% else %}
+                        None
+                        {% endif %}
+                    </p>
                 </div>
                 <form method="POST">
                     <input type="hidden" name="resident_id" value="{{ resident.id }}">
                     <div class="card-footer d-flex justify-content-center">
                         <a href="#" onclick="this.parentNode.parentNode.submit(); return false;"
-                            class="btn btn-primary">View Details</a>
+                            class="btn btn-primary">View Meds</a>
                     </div>
                 </form>
             </div>
             {% endfor %}
         </div>
-        {% endblock %}
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,51 @@
+{% extends "base.html"%} {% block title %}Home{% endblock %} {% block subtitle %}Add New Medication{% endblock%}
+
+{% block content %}
+
+<div class="container-fluid">
+    <form action="/add-medication" method="post">
+        <div class="form-group">
+            <label for="medicationName">Medication Name</label>
+            <select class="form-control" id="medicationName" name="medicationName" required>
+                <option value="" disabled selected>Select Medication</option>
+                {% for medication in known_medication %}
+                <option value="{{ medication }}">{{ medication}}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="form-group">
+            <label for="route">Route</label>
+            <input type="text" class="form-control" id="route" name="route" required>
+        </div>
+        <div class="form-group">
+            <label for="dosage">Dosage</label>
+            <input type="text" class="form-control" id="dosage" name="dosage" required>
+        </div>
+        <div class="form-group">
+            <label for="pillQuantity">Pill Quantity</label>
+            <input type="number" class="form-control" id="pillQuantity" name="pillQuantity" required>
+        </div>
+        <div class="form-group">
+            <label for="pillFrequency">Pill Frequency</label>
+            <input type="text" class="form-control" id="pillFrequency" name="pillFrequency" required>
+        </div>
+        <div class="form-group">
+            <label for="refillQuantity">Refill Quantity</label>
+            <input type="number" class="form-control" id="refillQuantity" name="refillQuantity" required>
+        </div>
+        <div class="form-group">
+            <label for="startDate">Start Date</label>
+            <input type="date" class="form-control" id="startDate" name="startDate" required>
+        </div>
+        <div class="form-group">
+            <label for="prescriptionDate">Prescription Date</label>
+            <input type="date" class="form-control" id="prescriptionDate" name="prescriptionDate" required>
+        </div>
+        <div class="form-group">
+            <label for="description">Description</label>
+            <textarea class="form-control" id="description" name="description" rows="3"></textarea>
+        </div>
+        <button type="submit" class="btn btn-primary">Submit</button>
+    </form>
+</div>
+{% endblock %}
