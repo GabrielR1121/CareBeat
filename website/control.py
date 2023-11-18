@@ -66,18 +66,26 @@ def set_selected_medication(medication):
 
 #Verifies if the inputed id is in the designated lists
 def verify_id(id, type):
+    #Validates if the user logging in is a Caretaker or Nurse
     if type == 'User':
         user = db.get_caretaker(current_user.id)
+        #If the User is a caretaker
         if user:
+            #Store the caretaker to the Flask Session
             set_selected_user(user)
         else:
+            #Store the nurse to the flask session
             set_selected_user(db.get_nurse(current_user.id))
     elif type == 'Resident':
+        #When a resident is selected in the Home Page find the resident Object
+        # and store it to the flask session
         for resident in get_selected_user().get_resident_list():
             if int(id) == resident.id:
                 set_selected_resident(resident)
                 break
     else:
+        # When a medication for a resident is selected store the selected medication
+        # to the flask session
         selected_resident = get_selected_resident()
         if selected_resident:
             for medication in db.get_medication_list(selected_resident):
