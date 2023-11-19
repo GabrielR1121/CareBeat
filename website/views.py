@@ -30,12 +30,19 @@ views = Blueprint("views", __name__)
 @views.route("/", methods=["GET", "POST"])
 @login_required
 def home():
+    #Verifies the type of user logging in.
     verify_id(0, "User")
+    #If a resident is clicked
     if request.method == "POST":
+        #Store the resident id
         resident_id = request.form.get("resident_id")
         if resident_id:
+            #Stores the clicked resident to the home page
             verify_id(resident_id, "Resident")
+            #Move to the medication list page
             return redirect(url_for("views.medication_list"))
+    #Else Get request, Show home page, validate what to show in the flyout menu and get the list of residents
+    # associated with the user
     return render_template(
         "home.html",
         showMedicationList=False,

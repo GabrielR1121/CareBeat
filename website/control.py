@@ -105,18 +105,7 @@ def get_resident_list(user):
 def insert_new_medication(medication_name,route,dosage,pill_quantity,pill_frequency,refill_quantity,start_date,prescription_date,description):
     id = db.find_med_id(medication_name)
 
-    db.add_new_medication(
-        get_selected_resident(),
-        id,
-        medication_name,
-        route,
-        dosage,
-        pill_quantity,
-        pill_frequency,
-        refill_quantity,
-        start_date,
-        prescription_date,
-    )
+    db.add_new_medication(get_selected_resident(),id,medication_name,route,dosage,pill_quantity,pill_frequency,refill_quantity,start_date,prescription_date,)
 
 def insert_wellness_check(feeling, description, temperature,weight,systolic_bp,diastolic_bp,heart_rate,glucose):
     vitals = None
