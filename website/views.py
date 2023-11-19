@@ -260,65 +260,29 @@ def add_medication():
 @views.route("/medication-dashboard", methods=["GET", "POST"])
 @login_required
 def medication_dashboard():
+    #Get the selected Resident
     selected_resident = get_selected_resident()
+    #Get the Selected Medication
     selected_medication = get_selected_medication()
 
+    #If both have data then generate the medication dashboard
     if selected_resident and selected_medication:
-        graph1JSON = json.dumps(
-            dash.createGraphOne(selected_medication, selected_resident),
-            cls=plotly.utils.PlotlyJSONEncoder,
-        )
-        graph2JSON = json.dumps(
-            dash.createGraphTwo(selected_medication, selected_resident),
-            cls=plotly.utils.PlotlyJSONEncoder,
-        )
-        graph3JSON = json.dumps(
-            dash.createGraphThree(selected_medication, selected_resident),
-            cls=plotly.utils.PlotlyJSONEncoder,
-        )
-        graph4JSON = json.dumps(
-            dash.createGraphFour(selected_medication, selected_resident),
-            cls=plotly.utils.PlotlyJSONEncoder,
-        )
-        graph5JSON = json.dumps(
-            dash.createGraphFive(selected_medication, selected_resident),
-            cls=plotly.utils.PlotlyJSONEncoder,
-        )
-        graph6JSON = json.dumps(
-            dash.createGraphSix(selected_medication, selected_resident),
-            cls=plotly.utils.PlotlyJSONEncoder,
-        )
-        graph7JSON = json.dumps(
-            dash.createGraphSeven(selected_medication, selected_resident),
-            cls=plotly.utils.PlotlyJSONEncoder,
-        )
-        graph8JSON = json.dumps(
-            dash.createGraphEight(selected_medication, selected_resident),
-            cls=plotly.utils.PlotlyJSONEncoder,
-        )
-        graph9JSON = json.dumps(
-            dash.createGraphNine(selected_medication, selected_resident),
-            cls=plotly.utils.PlotlyJSONEncoder,
-        )
-        graph10JSON = json.dumps(
-            dash.createGraphTen(selected_medication, selected_resident),
-            cls=plotly.utils.PlotlyJSONEncoder,
-        )
-
-        return render_template(
-            "medication_dashboard.html",
-            graph1JSON=graph1JSON,
-            graph2JSON=graph2JSON,
-            graph3JSON=graph3JSON,
-            graph4JSON=graph4JSON,
-            graph5JSON=graph5JSON,
-            graph6JSON=graph6JSON,
-            graph7JSON=graph7JSON,
-            graph8JSON=graph8JSON,
-            graph9JSON=graph9JSON,
-            graph10JSON=graph10JSON,
-            medication=selected_medication,
-            resident=selected_resident,
+        graph1JSON = json.dumps(dash.createGraphOne(selected_medication, selected_resident),cls=plotly.utils.PlotlyJSONEncoder,)
+        graph2JSON = json.dumps(dash.createGraphTwo(selected_medication, selected_resident),cls=plotly.utils.PlotlyJSONEncoder,)
+        graph3JSON = json.dumps(dash.createGraphThree(selected_medication, selected_resident),cls=plotly.utils.PlotlyJSONEncoder,)
+        graph4JSON = json.dumps(dash.createGraphFour(selected_medication, selected_resident),cls=plotly.utils.PlotlyJSONEncoder,)
+        graph5JSON = json.dumps(dash.createGraphFive(selected_medication, selected_resident),cls=plotly.utils.PlotlyJSONEncoder,)
+        graph6JSON = json.dumps(dash.createGraphSix(selected_medication, selected_resident),cls=plotly.utils.PlotlyJSONEncoder,)
+        graph7JSON = json.dumps(dash.createGraphSeven(selected_medication, selected_resident),cls=plotly.utils.PlotlyJSONEncoder,)
+        graph8JSON = json.dumps(dash.createGraphEight(selected_medication, selected_resident),cls=plotly.utils.PlotlyJSONEncoder,)
+        graph9JSON = json.dumps(dash.createGraphNine(selected_medication, selected_resident),cls=plotly.utils.PlotlyJSONEncoder,)
+        graph10JSON = json.dumps(dash.createGraphTen(selected_medication, selected_resident),cls=plotly.utils.PlotlyJSONEncoder,)
+        
+        return render_template("medication_dashboard.html",
+            graph1JSON=graph1JSON,graph2JSON=graph2JSON,graph3JSON=graph3JSON,
+            graph4JSON=graph4JSON,graph5JSON=graph5JSON,graph6JSON=graph6JSON,
+            graph7JSON=graph7JSON,graph8JSON=graph8JSON,graph9JSON=graph9JSON,
+            graph10JSON=graph10JSON,medication=selected_medication,resident=selected_resident,
             showMedicationList=False,
         )
     else:
