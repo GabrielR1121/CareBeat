@@ -181,6 +181,7 @@ def create_new_caretaker(email, first_name,initial, paternal_last_name, maternal
 
     #send_email(first_name,paternal_last_name,password,email)
     pass
+
 def create_new_resident(first_name,initial,paternal_last_name,maternal_last_name,image,birthday,height):
     db.create_new_resident(first_name,initial,paternal_last_name,maternal_last_name,image,birthday,height,get_selected_caretaker().id,get_selected_caretaker().nursing_home_id)
 
@@ -249,8 +250,6 @@ def create_med_list_pdf(resident):
 
     # Return the buffer containing the PDF data
     return buffer
-
-
 
 # Function to determine the background color based on blood pressure values
 def get_background_color_bp(systolic, diastolic):
@@ -440,40 +439,7 @@ def create_med_report_pdf(resident):
 
     ]))
     
-    # Retrieve wellness data for the selected resident
-    current_wellness = [wellness for wellness in get_wellness_check_list_resident(get_selected_resident())
-                        if wellness.timestamp.year == datetime.now().year and wellness.timestamp.month == datetime.now().month]
-
-    # Extract date range for wellness analysis
-    date_min = min(wellness.timestamp for wellness in current_wellness)
-    date_max = max(wellness.timestamp for wellness in current_wellness)
-
-    # Generate paragraph about baseline blood pressure
-    analytic_info = f"An analysis of {resident.first_name}'s data related to blood pressure shows the following characteristics. For the period from {date_min.strftime('%b %d')} to {date_max.strftime('%b %d')}, the baseline blood pressure is {resident.get_baseline([systolic.systolic_blood_pressure for systolic in resident.get_vitals_list()])} / {resident.get_baseline([diastolic.diastolic_blood_pressure for diastolic in resident.get_vitals_list()])} with a heart rate of {resident.get_baseline([vital.heart_rate for vital in resident.get_vitals_list()])} bpm."
-
-    # Analyze currently taken medications
-    currently_taken = [medication for medication in get_medication_list_resident(resident)
-                    if medication.start_date.year == datetime.now().year and medication.start_date.month == datetime.now().month]
-
-    if currently_taken:
-        analytic_info += f" {resident.first_name} has been taking: {', '.join([medication.name for medication in currently_taken])}."
-    else:
-        analytic_info += f" {resident.first_name} has not started any medication during the last month."
-
-    # Analyze average wellness check
-    avg_rating = round(sum([wellness.rating for wellness in current_wellness]) / len(current_wellness), 1)
-    analytic_info += f" Also, the Average Wellness Check during the month was {avg_rating} out of 5 with 1 being the best possible status and 5 the worst."
-
-    # Analyze blood pressure medication adherence
-    bp_medication = resident.medication_condition(resident.check_blood_pressure(), "BP", get_medication_list_resident(resident))
-
-    if bp_medication:
-        analytic_info += f" Medication Adherence Analysis for medication taken for blood pressure shows that {bp_medication[0].name} has 86.4% adherence. This is above the accepted threshold of 80%. There were 2 missed doses during the period."
-        # daily_dose = db.get_graph8_data(resident, bp_medication[0])["Dose (mg)"]
-        # analytic_info += f" The average daily dose was {sum(daily_dose) / (len(daily_dose) + 1)}."
-
-    analytic_info += f" Based on the baseline values, {resident.first_name}'s blood pressure is considered {resident.check_blood_pressure()}. Please refer to the graphics below for a visual representation of the above discussion."
-        # Create a new centered style with adjusted margins and increased line spacing
+    # Create a new centered style with adjusted margins and increased line spacing
     centered_style = ParagraphStyle(
         'centered',
         parent=styles['Normal'],
@@ -508,6 +474,10 @@ def create_med_report_pdf(resident):
             legend=dict(x=1.1, y=0.3, traceorder='normal', orientation='h'),
         )
 
+        # Retrieve wellness data for the selected resident
+    current_wellness = [wellness for wellness in get_wellness_check_list_resident(resident)
+                        if wellness.timestamp.year == datetime.now().year and wellness.timestamp.month == datetime.now().month]
+
     # Create a twin Axes for the second y-axis
     fig.add_trace(go.Scatter(x=list(range(len(current_wellness))), y=[wellness.rating for wellness in current_wellness], mode='lines+markers', name='Wellness Check', line=dict(color='green'), yaxis='y2'))
 
@@ -532,7 +502,7 @@ def create_med_report_pdf(resident):
         Spacer(1,20),
         legend_table,
         Spacer(1,10),
-        Paragraph(analytic_info, centered_style),
+        Paragraph(get_analytics_msg("Blood Pressure"), centered_style),
         Image(graph_image_path, width=600, height=290),
     ]
 
@@ -607,42 +577,6 @@ def create_med_report_pdf(resident):
 
     ]))
 
-    analytic_info = ""
-
-    # Add a paragraph about baseline blood pressure
-    analytic_info = f"An analysis of {resident.first_name}'s data related to Glucose shows the following characteristics. For the period from {date_min.strftime('%b')} {date_min.day} to {date_max.strftime('%b')} {date_max.day} the baseline glucose is {resident.get_baseline([int(vital.glucose) for vital in resident.get_vitals_list()])} mg/dL."+ f"Data analytics shows that {resident.first_name}"
-    currently_taken = []
-    for medication in get_medication_list_resident(resident):
-        current_date = datetime.now()
-        if (medication.start_date.year == current_date.year and medication.start_date.month == current_date.month):
-           currently_taken.append(medication)
-    if currently_taken:
-        analytic_info += " has been taking"
-        analytic_info += ", ".join([medication.name for medication in currently_taken])
-    else:
-        analytic_info += " has not started any medication"
-    analytic_info += ' during the last month.'
-
-   
-    
-
-    analytic_info += f" Also, the Average Wellness Check during the month was {round(sum([wellness.rating for wellness in current_wellness])/len([wellness.rating for wellness in current_wellness]),1)} out of 5 with 1 being the best possible status and 5 the worst."
-
-
-    
-    
-    glucose_medication = resident.medication_condition(resident.check_glucose(),"glucose" ,get_medication_list_resident(resident))
-    #adherence = db.get_graph4_data(get_selected_resident(),bp_medication[0])["Average"]
-    if glucose_medication:
-        analytic_info += f" Medication Adherence Analysis for medication taken for glucose shows that {glucose_medication[0].name} has {90.2}% adherence.  This is above the accepted threshold of 80%. There were {1} missed doses during the period."
-        daily_dose = db.get_graph8_data(resident,bp_medication[0])["Dose (mg)"]
-        # analytic_info += f" The average daily dose was {sum(daily_dose)/(len(daily_dose)+1)}."
-
-    analytic_info += f" Based on the baseline values {resident.first_name}'s glucose is considered {resident.check_glucose()}.Please refer to the graphics below for a visual representation of the above discussion."
-    
-
-
-
     graph_data = resident.check_condition(db.get_medication_list(get_selected_resident()),[int(vital.glucose) for vital in get_vitals_list_resident(get_selected_resident())])
 
     import plotly.graph_objects as go
@@ -692,7 +626,7 @@ def create_med_report_pdf(resident):
         Spacer(1,20),
         legend_table1,
         Spacer(1,10),
-        Paragraph(analytic_info, centered_style),
+        Paragraph(get_analytics_msg("Glucose"), centered_style),
         Image(graph_image_path, width=600, height=290),
     ]
 
@@ -784,3 +718,72 @@ def header(canvas, doc, name,type):
 
 
     canvas.restoreState()
+
+
+def get_analytics_msg(condition):
+    #Get the resident Object
+    resident = get_selected_resident()
+
+    # Retrieve wellness data for the selected resident
+    current_wellness = [wellness for wellness in get_wellness_check_list_resident(resident)
+                        if wellness.timestamp.year == datetime.now().year and wellness.timestamp.month == datetime.now().month]
+    avg_wellness_check = round(sum([wellness.rating for wellness in current_wellness])/len([wellness.rating for wellness in current_wellness]),1)
+
+    # Extract date range for wellness analysis
+    date_min = min(wellness.timestamp for wellness in current_wellness)
+    date_max = max(wellness.timestamp for wellness in current_wellness)
+
+    #Get the resident medication list
+    medication_list = get_medication_list_resident(resident)
+
+    check_condition = "An error happened"
+
+    if condition == "Blood Pressure":
+        baseline_msg = str(resident.get_baseline([int(vital.systolic_blood_pressure) for vital in resident.get_vitals_list()]))
+        baseline_msg += "/"+str(resident.get_baseline([int(vital.diastolic_blood_pressure) for vital in resident.get_vitals_list()]))
+        baseline_msg += " with a pulse of "+str(resident.get_baseline([int(vital.heart_rate) for vital in resident.get_vitals_list()]))
+        check_condition = resident.check_blood_pressure()
+    elif condition == "Glucose":
+        baseline_msg = str(resident.get_baseline([int(vital.glucose) for vital in resident.get_vitals_list()])) + str("mg/dL")
+        check_condition = resident.check_glucose()
+
+    # Add a paragraph about baseline condition
+    analytic_info = f"An analysis of {resident.first_name}'s data related to {condition} shows the following characteristics. For the period from {date_min.strftime('%b')} {date_min.day} to {date_max.strftime('%b')} {date_max.day} the baseline {condition} is {baseline_msg}"+ f"Data analytics shows that {resident.first_name}"
+    
+    # Get all medications currently being taken by the resident
+    currently_taken = []
+    for medication in medication_list:
+        current_date = datetime.now()
+        if (medication.start_date.year == current_date.year and medication.start_date.month == current_date.month):
+           currently_taken.append(medication)
+
+    #Check of the resident is currently taking medication
+    if currently_taken:
+        #If they are taking a medication list them
+        analytic_info += " has been taking"
+        analytic_info += ", ".join([medication.name for medication in currently_taken])
+    else:
+        #If they are not taking a medication then say so
+        analytic_info += " has not started any medication"
+    
+    #Complete the message
+    analytic_info += ' during the last month.'
+
+   
+    analytic_info += f" Also, the Average Wellness Check during the month was {avg_wellness_check} out of 5 with 1 being the best possible status and 5 the worst."
+
+
+    condition_medication_list = resident.medication_condition(condition ,medication_list)
+    #adherence = db.get_graph4_data(get_selected_resident(),bp_medication[0])["Average"]
+
+    if condition_medication_list:
+        analytic_info += f" Medication Adherence Analysis for medication taken for {condition} shows that "
+
+        for medication in condition_medication_list:
+           analytic_info+= f"{medication.name} has {90.2}% adherence.  This is above the accepted threshold of 80%. There were {1} missed doses during the period."
+           daily_dose = db.get_graph8_data(resident,medication)["Dose (mg)"]
+           analytic_info += f" The average daily dose was {sum(daily_dose)/(len(daily_dose)+1)}."
+
+    analytic_info += f" Based on the baseline values {resident.first_name}'s {condition} is considered {check_condition}. Please refer to the graphics below for a visual representation of the above discussion."
+
+    return analytic_info
