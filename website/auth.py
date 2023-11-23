@@ -1,6 +1,6 @@
 from flask import Blueprint,render_template, request, flash,redirect, url_for
 from website.config import db
-from flask_login import login_user, login_required, logout_user,current_user
+from flask_login import login_user, login_required, logout_user
 
 auth = Blueprint('auth',__name__)
 
@@ -17,6 +17,7 @@ def add_no_cache_headers(response):
 def apply_no_cache(response):
     return add_no_cache_headers(response)
 
+#Creates a route for the login
 @auth.route('/login', methods=['GET','POST'])
 def login():
     next_url = request.args.get('next')
@@ -54,8 +55,10 @@ def login():
             
     return render_template("login.html")
 
+#Creates Route to logout
 @auth.route('/logout')
 @login_required
 def logout():
+    #Flask Application Logsout the session 
     logout_user()
     return redirect(url_for('auth.login'))
