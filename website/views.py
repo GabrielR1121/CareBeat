@@ -19,9 +19,8 @@ from .control import (
     create_new_resident,
     get_resident_list,
     create_med_report_pdf,
+    delete_img_graphs,
 )
-from .models import Caretaker
-import random
 
 views = Blueprint("views", __name__)
 
@@ -43,10 +42,7 @@ def home():
             return redirect(url_for("views.medication_list"))
     #Else Get request, Show home page, validate what to show in the flyout menu and get the list of residents
     # associated with the user
-    return render_template(
-        "home.html",
-        showMedicationList=False,
-        add_resident = True,
+    return render_template("home.html",showMedicationList=False,add_resident = True,
         resident_list=get_resident_list(get_selected_user()),
     )
 
@@ -120,66 +116,40 @@ def medication_list():
     selected_resident = get_selected_resident()
     if selected_resident:
         medication_list = get_medication_list_resident(get_selected_resident())
-        print(medication_list)
+        delete_img_graphs()
 
         if request.method == "POST":
             medication_id = request.form.get("medication_id")
             if medication_id:
                 verify_id(medication_id, "Medication")
                 return redirect(url_for("views.medication_dashboard"))
-        
-        vitals_list = get_vitals_list_resident(get_selected_resident())
-
+            
+        #Default all conditions to False
         temp_check = weight_check= systolic_bp_check = diastolic_bp_check = heart_rate_check = glucose_check = False
 
-        min_temp = 97.5
-        max_temp = 100.5
-
-        resident_height = random.uniform(1.45, 1.95)
-
-        min_BMI = 18.5
-        max_BMI = 24.9
-
-        min_systolic_bp = 91
-        max_systolic_bp = 130
-
-        min_diastolic_bp = 61
-        max_diastolic_bp = 80
-
-        min_heart_rate = 60
-        max_heart_rate = 100
-
-        min_glucose = 30
-        max_glucose = 130
-
-        resident_BMI = 0
         Emergency_Admin = []
-        if len(vitals_list) >=1:
-            latestVitals = vitals_list[-1]
-           # resident_BMI = float(latestVitals.weight) / (resident_height ** 2)
 
-            if latestVitals.temperature < min_temp or latestVitals.temperature > max_temp:
-                temp_check = True
+        active_flags = selected_resident.get_active_flags()
 
-          #  if resident_BMI < min_BMI or resident_BMI > max_BMI:
-           #     weight_check = True
-            confirm,spike,outliers,range_t,baseline,all,match,dump = get_selected_resident().check_condition(get_medication_list_resident(get_selected_resident()),[vital.systolic_blood_pressure for vital in get_vitals_list_resident(get_selected_resident())])
-            if confirm:
-                Emergency_Admin = get_selected_resident().medication_condition(get_selected_resident().check_blood_pressure(),"BP" ,get_medication_list_resident(get_selected_resident()))
-                print("Emergency Medication:", Emergency_Admin)
+        # resident_BMI = float(latestVitals.weight) / (resident_height ** 2)
 
-                systolic_bp_check = True
+        if "Temp" in active_flags:
+            temp_check = True
 
-         #   if latestVitals.diastolic_blood_pressure < min_diastolic_bp or latestVitals.diastolic_blood_pressure > max_diastolic_bp:
-               # diastolic_bp_check = True
-            
-            if latestVitals.heart_rate < min_heart_rate or latestVitals.heart_rate > max_heart_rate:
-                heart_rate_check = True
+        #  if resident_BMI < min_BMI or resident_BMI > max_BMI:
+        #     weight_check = True
 
-            if latestVitals.glucose < min_glucose or latestVitals.glucose > max_glucose:
-                glucose_check= True
-        else:
-            latestVitals = []
+        # confirm,spike,outliers,range_t,baseline,all,match,dump = get_selected_resident().check_condition(get_medication_list_resident(get_selected_resident()),[vital.systolic_blood_pressure for vital in get_vitals_list_resident(get_selected_resident())])
+        # if confirm:
+        if any(category in active_flags for category in ["Low Blood Pressure", "Pre-Hypertension", "High: Stage 1 Hypertension", "High: Stage 2 Hypertension"]):
+            Emergency_Admin = get_selected_resident().medication_condition("Blood Pressure" ,get_medication_list_resident(get_selected_resident()))
+            systolic_bp_check = True
+
+        if "Heart_rate" in active_flags:
+            heart_rate_check = True
+
+        if "Glucose" in active_flags:
+            glucose_check= True
 
         for index in range(len(medication_list)):
             medication_list[index].calculate_priority(Emergency_Admin)
@@ -190,35 +160,12 @@ def medication_list():
         
         priority_medication = sorted(medication_list,key=sort_key)
 
-        return render_template(
-            "medication_list.html",
-            showAddMedication=True if get_selected_user().role == "Nurse" else False,
-            showMedicationList=True,
-            add_resident = False,
-            user=get_selected_user(),
-            resident=selected_resident,
-            medication_list=priority_medication,
-            temp_check = temp_check,
-            weight_check = weight_check,
-            systolic_bp_check = systolic_bp_check,
-            diastolic_bp_check = diastolic_bp_check,
-            heart_rate_check = heart_rate_check,
-            glucose_check = glucose_check,
-            latestVitals = latestVitals,
-            min_temp = 97.5,
-            max_temp = 100.5,
-            min_BMI = 18.5,
-            max_BMI = 24.9,
-            min_systolic_bp = 91,
-            max_systolic_bp = 130,
-            min_diastolic_bp = 61,
-            max_diastolic_bp = 80,
-            min_heart_rate = 60,
-            max_heart_rate = 100,
-            min_glucose = 30,
-            max_glucose = 130,
+        return render_template("medication_list.html",showAddMedication=True if get_selected_user().role == "Nurse" else False,
+            showMedicationList=True,add_resident = False,user=get_selected_user(),resident=selected_resident,
+            medication_list=priority_medication,temp_check = temp_check,weight_check = weight_check,
+            systolic_bp_check = systolic_bp_check,diastolic_bp_check = diastolic_bp_check,
+            heart_rate_check = heart_rate_check,glucose_check = glucose_check,
             Emergency_Admin = Emergency_Admin,
-        #    resident_BMI = round(resident_BMI,2),
         )
     else:
         return "Resident not found", 404
