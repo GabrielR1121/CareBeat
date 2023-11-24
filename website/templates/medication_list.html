@@ -95,27 +95,47 @@
         $('#customAlertMessage').html(message);
         $('#customPopupModal').modal('show');
     }
-    
+
     // Check your conditions and trigger the pop-up
     {% if resident.conduct_periodic_wellness_checks() != 0 and(temp_check or weight_check or systolic_bp_check or diastolic_bp_check or heart_rate_check or glucose_check) %}
     var alertMessages = [];
+    alertMessages.push("Anomaly detected with ");
+
     {% if temp_check %}
-    alertMessages.push("Temperature was: {{latestVitals.temperature}}. Value is recommended between {{min_temp}} and {{max_temp}}");
+    alertMessages.push("Temperature");
+    {% if weight_check or systolic_bp_check or diastolic_bp_check or heart_rate_check or glucose_check %}
+    alertMessages.push(", ");
     {% endif %}
-    {% if weight_check %}
-    alertMessages.push("BMI was: {{resident_BMI}}. Value is recommended between {{min_BMI}} and {{max_BMI}}");
-    {% endif %}
-    {% if True %}
-    alertMessages.push("An anomaly with Blood Pressure patterns for this patient has been detected. Wellness Checks have been incremented and are now required until values return to baseline. <br> Remaining Wellness Checks for today: {{resident.conduct_periodic_wellness_checks()}}");
-    {% endif %}
-    {% if heart_rate_check %}
-    alertMessages.push("Heart Rate was {{latestVitals.heart_rate}}. Value is recommended between {{min_heart_rate}} and {{max_heart_rate}}");
-    {% endif %}
-    {% if glucose_check %}
-    alertMessages.push("Glucose was {{latestVitals.glucose}}. Value is recommended between {{min_glucose}} and {{max_glucose}}");
     {% endif %}
 
-    var combinedMessage = alertMessages.join("<br><br>");
+    {% if weight_check %}
+    alertMessages.push("BMI");
+    {% if systolic_bp_check or diastolic_bp_check or heart_rate_check or glucose_check %}
+    alertMessages.push(", ");
+    {% endif %}
+    {% endif %}
+
+    {% if systolic_bp_check or diastolic_bp_check %}
+    alertMessages.push("Blood Pressure");
+    {% if heart_rate_check or glucose_check %}
+    alertMessages.push(", ");
+    {% endif %}
+    {% endif %}
+
+    {% if heart_rate_check %}
+    alertMessages.push("Heart Rate");
+    {% if glucose_check %}
+    alertMessages.push(", ");
+    {% endif %}
+    {% endif %}
+
+    {% if glucose_check %}
+    alertMessages.push("Glucose");
+    {% endif %}
+
+    alertMessages.push(" patterns for this patient have been detected. Wellness Checks have been incremented and are now required until values return to baseline. <br> Remaining Wellness Checks for today: {{ resident.conduct_periodic_wellness_checks() }}");
+
+    var combinedMessage = alertMessages.join("");
     showCustomAlert(combinedMessage);
     {% endif %}
 </script>
