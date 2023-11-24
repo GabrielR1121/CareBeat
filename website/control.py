@@ -274,6 +274,28 @@ def get_background_color_glucose(glucose):
     else:
         return '#F1444A'
        
+def delete_img_graphs():
+    import os
+    '''
+    Method to delete created graphs in the medication report in order to safe space
+    '''
+    #Image graph names to make it easier for deletion
+    images_to_delete = ['glucose_image.png', 'bp_image.png']
+    directory_path = r'website\static\images'
+
+    #Deletes the designated files
+    try:
+        for filename in os.listdir(directory_path):
+            if filename in images_to_delete:
+                file_path = os.path.join(directory_path, filename)
+                os.remove(file_path)
+                print(f'{file_path} has been deleted successfully.')
+    except OSError as e:
+            if 'No such file or directory' in str(e):
+                print(f'Error: Files in {directory_path} have already been deleted.')
+            else:
+                print(f'Error deleting files in {directory_path}: {e}')
+
 def create_med_report_pdf(resident):
     # Create a buffer to store the PDF data
     buffer = BytesIO()
@@ -358,8 +380,6 @@ def create_med_report_pdf(resident):
     story.append(footer_note)
     # Add a page break to start a new page
     story.append(PageBreak())
-
-
 
     # Create a PageTemplate for the custom header and section
     header_frame = Frame(doc.leftMargin, doc.bottomMargin, doc.width, doc.height - 100, id='header')
