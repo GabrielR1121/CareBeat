@@ -233,21 +233,21 @@ class Resident:
 
         return round(sum(baseline_vital)/len(baseline_vital))
     
-    def medication_condition(self, condition,type,med_list):
-        if type == 'BP':
+    #Associates a medicaiton with a specific condition
+    def medication_condition(self,type,med_list):
+        #Determines the condition in order to search accordingly
+        if type == 'Blood Pressure':
             conditions = ["Low Blood Pressure", "Pre-Hypertension", "High: Stage 1 Hypertension", "High: Stage 2 Hypertension"]
         else:
             conditions = ["Diabetes"]
-        print(conditions)
+
         
         filtered_medications = []
         
         for medication in med_list:
-            print("Medication Name: " + str(medication.name))
             diagnosis_list = medication.get_diagnosis_list()
             
             for diagnosis in diagnosis_list:
-                print(str(diagnosis.name) + "\n")
                 
                 # Use fuzzy matching to compare diagnosis to BP conditions
                 for vital in conditions:
@@ -260,6 +260,7 @@ class Resident:
                         break  # Break out of the loop if a match is found
         return filtered_medications
 
+    #Assess if patient requires periodic wellness checks
     def conduct_periodic_wellness_checks(self):
         timestamp_list = []
 
@@ -277,17 +278,7 @@ class Resident:
 
         if daily_checks_left <= 0:
             daily_checks_left = 0
-
-        if daily_checks_left == 0:
-            print("No more Wellness Checks are required today")
-        else:
-            print("Blood pressure check needed (at least 2 times a day).")
-
         return daily_checks_left
-
-        
-
-        pass
 
     def set_vitals_list(self, list):
         self.vitals_list = list
@@ -296,9 +287,6 @@ class Resident:
         return self.vitals_list
     
     def get_month_vitals(self):
-        # Assuming your vital objects have a timestamp attribute
-        timestamps = [vital.timestamp for vital in self.vitals_list]
-
         # Filter data for the current month
         current_month = datetime.now().strftime('%Y-%m')
         filtered_data = {
@@ -316,9 +304,6 @@ class Resident:
 
     def get_medication_list(self):
         return self.medication_list
-
-
-
 
 class Caretaker(UserMixin):
     '''
@@ -475,12 +460,13 @@ class Medication:
 
     def when_taken(self):
         import datetime
+        #Set Start and End time for the morning between 6 am and 11 am
         morning_start = datetime.time(6, 0)
         morning_end = datetime.time(11, 0)
-
+        #Set Start and End Time for noon between 11 am and 2 pm
         noon_start = datetime.time(11, 0)
         noon_end = datetime.time(14, 0)
-
+        #Set Start and End Time for evening between 2 pm and 8 pm
         evening_start = datetime.time(14, 0)
         evening_end = datetime.time(20, 0)
 
@@ -504,7 +490,7 @@ class Medication:
                 bedtime_count += 1
 
         # Define consistency threshold
-        consistency_threshold = 0.1 
+        consistency_threshold = 0.5 
 
         # Calculate percentages with error handling
         try:
@@ -598,6 +584,9 @@ class Refill:
 
 
 class Wellness_check:
+    '''
+    Class for each Wellness Check
+    '''
     def __init__(self, id=None, timestamp=None, rating=None, description=None):
         self.id = id
         self.timestamp = timestamp if timestamp is not None else datetime.now()
@@ -607,6 +596,9 @@ class Wellness_check:
 
 
 class Vitals:
+    '''
+    Class for Vital Check
+    '''
     def __init__(self, id=None, timestamp=None, temperature=None, weight=None, systolic_blood_pressure=None, diastolic_blood_pressure=None, heart_rate=None, glucose=None):
         self.id = id
         self.timestamp = timestamp if timestamp is not None else datetime.now()
