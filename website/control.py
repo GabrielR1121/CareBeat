@@ -717,16 +717,7 @@ def header(canvas, doc, name,type):
         date_time_width = canvas.stringWidth(current_datetime_str, 'Helvetica', 12)
         canvas.drawString(page_width - date_time_width - 5, page_height - 18, current_datetime_str)
 
-        # Draw a gray box directly under the red line
-        canvas.setFillColor(colors.HexColor("#CCCCCC"))
-        canvas.setStrokeColor(colors.HexColor("#CCCCCC"))
-        canvas.rect(0, page_height - 250, page_width, 30, fill=True)
-        # Draw the header text in yellow color ("CareBeat")
-        canvas.setFillColor(colors.black)
-        canvas.setFont('Helvetica-Bold', 16)
-        text = "Medication List"
-        text_width = canvas.stringWidth(text, 'Helvetica-Bold', 16)
-        canvas.drawString((page_width - text_width) / 2, page_height - 240, text)
+
         
     if current_page in [2,3,4,5]:
         # Draw the header text in yellow color ("CareBeat")

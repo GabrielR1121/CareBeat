@@ -19,3 +19,4 @@
 
 #Ignore Docker Files
 /Dockerfile
+/.devcontainer
