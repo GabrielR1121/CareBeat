@@ -1,10 +1,10 @@
 from flask_login import UserMixin
 from datetime import datetime,timedelta
-import random
 from scipy.stats import linregress
 import numpy as np
 from fuzzywuzzy import fuzz
 from decimal import Decimal
+from datetime import date
 
 class Resident:
     '''
@@ -67,7 +67,7 @@ class Resident:
         '''
         Calculates the correct age of the resident
         '''
-        from datetime import date
+
         today = date.today()
         birthday = self.birthday
 
@@ -87,7 +87,10 @@ class Resident:
         return image
     
     def get_active_flags(self):
-        
+        """
+        Searches the min and max of each vital in order to find if the residnet information is within in normal ranges or not.
+        Returns a list of active flags with the condition names
+        """
         active_flags  = []
         if len(self.vitals_list) >=1:
 
@@ -108,6 +111,9 @@ class Resident:
         return active_flags
 
     def check_blood_pressure(self):
+        """
+        Checks in which category the blood pressure is in
+        """
         systolic_bp = self.get_baseline([vital.systolic_blood_pressure for vital in self.vitals_list])
         diastolic_bp = self.get_baseline([vital.diastolic_blood_pressure for vital in self.vitals_list])
 
@@ -127,6 +133,9 @@ class Resident:
         return condition
     
     def check_glucose(self):
+        """
+        Checks what categort the glucose is in
+        """
         glucose = self.get_baseline([int(vital.glucose) for vital in self.vitals_list])
 
         condition = ""
@@ -141,6 +150,9 @@ class Resident:
         return condition
     
     def check_heart_rate(self):
+        """
+        Checks what category the heart rate is 
+        """
         pulse = self.get_baseline([int(vital.heart_rate) for vital in self.vitals_list])
         if pulse <= 59:
             return "Low"
@@ -154,6 +166,9 @@ class Resident:
             return "Severe Tachycardia"
         
     def check_temp(self):
+        """
+        Checks in what category the temperature is
+        """
         temp = self.get_baseline([int(vital.temperature) for vital in self.vitals_list])
 
         if temp <95:
@@ -166,13 +181,14 @@ class Resident:
             return "Hyperthermia"
 
     def check_condition(self,medication_list,vital):
+        """
+        Analyzes the vitals data seeing if there are anamolies in the data and returns the result
+        """
         # Check if vital has less than 2 items
         if len(vital) < 2:
             return 0
         timestamps = [time.timestamp for time in self.vitals_list]
 
-        # Filter data for the current month
-        current_month = datetime.now().strftime('%Y-%m')
         filtered_data = {
             timestamp: vital_value
             for timestamp, vital_value in zip(timestamps, vital)
@@ -214,14 +230,15 @@ class Resident:
 
     
     def get_baseline(self,vital):
-
+        """
+        Analyzes the vitals data seeing if there are anamolies in the data and returns the result
+        """
         # Check if vital has less than 2 items
         if len(vital) < 2:
             return 0
         timestamps = [time.timestamp for time in self.vitals_list]
 
-        # Filter data for the current month
-        current_month = datetime.now().strftime('%Y-%m')
+
         filtered_data = {
             timestamp: vital
             for timestamp, vital in zip(timestamps, vital)
@@ -297,12 +314,15 @@ class Resident:
             daily_checks_left = 0
         return daily_checks_left
 
+    #Stores the list of vitals objects
     def set_vitals_list(self, list):
         self.vitals_list = list
 
+    #Gets the list of vital objects
     def get_vitals_list(self):
         return self.vitals_list
     
+    #Get the monthly vitals
     def get_month_vitals(self):
         # Filter data for the current month
         current_month = datetime.now().strftime('%Y-%m')
@@ -313,15 +333,19 @@ class Resident:
         }
         return filtered_data
     
+    #Stores the list of medication objects
     def set_medication_list(self, list):
         self.medication_list = list
 
+    #Add any medication to the medication list
     def add_medication(self, medication):
         self.medication_list.append(medication)
 
+    #Gets the list of medication objects
     def get_medication_list(self):
         return self.medication_list
     
+    #Calculates the A1C of the resident
     def calculate_A1C(self):
         glucose_list = []
         for vital in self.vitals_list:
@@ -455,6 +479,9 @@ class Medication:
         self.half_life = half_life
 
     def calculate_priority(self, emergency_admin):
+        """
+        Sets the priority of the medication
+        """
         #Time until next dose
         time_until_next_dose = self.time_until_next_dose().total_seconds() / 3600  # convert to hours
 
@@ -483,23 +510,38 @@ class Medication:
             self.priority = NO_PRIORITY
 
     def get_last_taken(self):
+        """
+        Gets the last pill taken timestamp or the start date
+        """
         if self.pills_list:
             return self.pills_list[-1].taken_timestamp
         else:
             return self.start_date
     
     def get_time_frequency(self):
+        """
+        Calculates the time span of when the next pill should be taken
+        """
         return 24/self.pill_frequency
     
     def next_dose(self):
+        """
+        Calculates the next dose
+        """
         return self.get_last_taken() + timedelta(hours=self.get_time_frequency())
     
     def time_until_next_dose(self):
+        """
+        Calculates the time it takes for the next dose
+        """
         current_time = datetime.now()
         time_until_next_dose = self.next_dose() - current_time
         return time_until_next_dose
 
     def when_taken(self):
+        """
+        Caluclates when the medications are taken with consistency each day
+        """
         import datetime
         #Set Start and End time for the morning between 6 am and 11 am
         morning_start = datetime.time(6, 0)
@@ -560,40 +602,47 @@ class Medication:
         self.evening_bool = "X" if evening_percentage >= consistency_threshold else ""
         self.bedtime_bool = "X" if bedtime_percentage >= consistency_threshold else ""
 
-
-
-
+    #Sets the pill list objects
     def set_pill_list(self, list):
         self.pills_list = list
         self.when_taken()
     
+    #Gets the pill list objects
     def get_pill_list(self):
         return self.pills_list
     
+    #Sets the diagnosis list objects
     def set_diagnosis_list(self, list):
         self.diagnosis_list = list
     
+    #Gets the diagnosis list objects 
     def get_diagnosis_list(self):
         return self.diagnosis_list
     
+    #Sets the refill list objects 
     def set_refill_list(self, list):
         self.refill_list = list
     
+    #Gets the refill list objects
     def get_refill_list(self):
         return self.refill_list  
 
+    #Gets the perscription daily dose
     def get_perscription_daily_dose(self):
         return self.pill_frequency * self.dosage
     
+    #Gets the estimates end date of the medication
     def get_estimated_end_date(self):
         from datetime import timedelta
         estimate = self.start_date + timedelta(days=self.pill_quantity/self.pill_frequency)
         return estimate
     
+    #Gets the start date of the medcation
     def get_start_date(self):
         import calendar
         return "{0}-{1}-{2}".format(self.start_date.day,calendar.month_abbr[self.start_date.month],self.start_date.year)
     
+    #Gets the amount of refills the medication has
     def amount_refill(self):
         count = 0
         for _ in self.refill_list:
@@ -601,6 +650,7 @@ class Medication:
 
         return count
     
+    #Gets how many pill have been taken up until now
     def medication_taken(self):
         total=0
         rem = 0
@@ -617,6 +667,7 @@ class Medication:
 
         return rem
     
+    #Gets how many refills the medicaiton has left
     def refills_left(self):
         Refills_left = self.refill_quantity-len(self.refill_list)
         if Refills_left > 0 and self.pill_quantity-self.medication_taken() <= self.pill_quantity*0.2:
@@ -624,12 +675,16 @@ class Medication:
         else:
             return 0
 
+    #Gets the total availble amount of pills
     def total_available_pills(self):
        return (self.pill_quantity - self.medication_taken()) + self.refills_left()
 
 
 
 class Diagnosis:
+    '''
+    Class for Diagnosis
+    '''
 
     def __init__(self,id,name):
         self.id = id
@@ -647,7 +702,7 @@ class Pill:
 
 class Refill:
     '''
-    Class for each refill
+    Class for Refill
     '''
     def __init__(self,id,taken_timestamp):
         '''

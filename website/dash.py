@@ -240,6 +240,11 @@ def createGraphEight(medication, resident):
 
 
 def createGraphNine(medication, resident):
+    """
+    Method to create the graph to presict when the medication will end based on the intake
+    Receives: 2 objects of Medication and resident.
+    Returns: The figure object with all the correct data.
+    """
     # Retrieve the data from the database
     graph_df = pd.DataFrame.from_dict(db.get_graph9_data(medication, resident))
 

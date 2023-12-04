@@ -19,8 +19,11 @@ from email.mime.multipart import MIMEMultipart
 from .models import Caretaker
 from datetime import datetime
 import qrcode
-
 from website.config import config
+'''
+File that has all the control code. 
+All the code that is run in the views.py is created here.
+'''
 
 #Gets Selected Resident from the pickle in the session
 def get_selected_resident():
@@ -97,13 +100,18 @@ def verify_id(id, type):
                     set_selected_medication(medication)
                     break
 
+# Execution code for when a medication is administered
+# Receives the id of the clicked medication
+# Returns a message if all worked correctly
 def med_administered(med_id):
     for medication in get_medication_list_resident(get_selected_resident()):
         if int(med_id) == medication.id:
             db.insert_into_pill(medication,get_selected_resident(),get_selected_user())
             print("medication was administered")
             break
-
+# Execution code for when a medication is refilled
+# Receives the id of the clicked medication
+# Returns a message if all worked correctly
 def add_refill_medication(med_id):
     for medication in get_medication_list_resident(get_selected_resident()):
         if int(med_id) == medication.id:
@@ -113,51 +121,66 @@ def add_refill_medication(med_id):
             break
 
 
+# Get the list of residents associated with the logged in user
+# Receives the user object
+# Returns the list of residents
 def get_resident_list(user):
     return db.get_residents(user)
 
+# Inserts a new medication 
+# Receives all the medication attributes for insertion
 def insert_new_medication(medication_name,route,dosage,pill_quantity,pill_frequency,refill_quantity,start_date,prescription_date,diagnosis_list):
     id = db.find_med_id(medication_name)
-
     db.add_new_medication(get_selected_resident(),id,medication_name,route,dosage,pill_quantity,pill_frequency,refill_quantity,start_date,prescription_date,diagnosis_list)
 
+# Insert welness check and vitals
+# recieves all the atributes from wellness check and vitals
 def insert_wellness_check(feeling, description, temperature,weight,systolic_bp,diastolic_bp,heart_rate,glucose):
     vitals = None
-    
     if any([temperature, weight,systolic_bp, diastolic_bp, heart_rate, glucose]):
         vitals = Vitals(temperature= temperature, weight = weight,systolic_blood_pressure=systolic_bp,diastolic_blood_pressure=diastolic_bp,heart_rate=heart_rate,glucose=glucose)
 
     wellness = Wellness_check( rating = feeling, description= description)
     db.insert_wellness_check(wellness,get_selected_resident(),vitals)
 
-
-
-
-
-
+#Gets the medication list linked to a specific resident
+# Returns a list of medication objects
 def get_medication_list_resident(resident):
     return db.get_medication_list(resident)
 
+#Gets the vitals list liked with a resident
+# Returns a list of vitals objects 
 def get_vitals_list_resident(resident):
     return db.get_vitals(resident)
 
+#Gets the wellness check list linked with a resident
+# Returns a list of wellness check objects
 def get_wellness_check_list_resident(resident):
     return db.get_wellness_checks(resident)
 
+#Gets the refill list linked with a resident
+# Returns a list of refill objects 
 def get_refill_list_resident(resident,medication):
     return db.get_refill_list(resident,medication)
 
+#Gets the caretaker linked to a resident 
+# Returns a caretaker object 
 def get_caretaker_resident(resident):
     return db.get_caretaker_resident(resident)
 
 
-
+#Gets a list of strings with the medication names
+# Returns a list of strings with all the medication names
 def get_all_medication_names():
     return db.get_all_medication_names()
 
+#Gets a list of strings with the diagnosis names
+# Returns a list of strings with all the diagnosis names
 def get_all_diagnosis_names():
     return db.get_all_diagnosis_names()
 
+#Generates a temp password for caretakers
+# Returns a secure password
 def generate_password(length=12):
     # Define characters to include in the password
     characters = string.ascii_letters + string.digits + string.punctuation
@@ -167,55 +190,21 @@ def generate_password(length=12):
     
     return password
 
-
-def send_email(first_name, last_name,password, to_email):
-    # Your email credentials and SMTP server information
-    sender_email = "carebeat031@gmail.com"
-    sender_password = "Carebeat1234"
-    smtp_server = "smtp.gmail.com"
-    smtp_port = 587
-
-
-    subject = "Welcome to CareBeat!"
-    body = "Welcome to CareBeat {first_name} {last_name}!\n Your login credentials are,\n Username:{to_email}\nPassword:{password}"
-
-    # Create the email message
-    message = MIMEMultipart()
-    message['From'] = sender_email
-    message['To'] = to_email
-    message['Subject'] = subject
-
-    # Attach the body of the email
-    message.attach(MIMEText(body, 'plain'))
-
-    # Connect to the SMTP server
-    with smtplib.SMTP(smtp_server, smtp_port) as server:
-        # Start TLS for security
-        server.starttls()
-
-        # Login to the email account
-        server.login(sender_email, sender_password)
-
-        # Send the email
-        server.sendmail(sender_email, to_email, message.as_string())
-
-    print(f"Email sent to {to_email} successfully!")
-
-
+#Inserts a new Caretaker
 def create_new_caretaker(email, first_name,initial, paternal_last_name, maternal_last_name, phone_number):
 
     password = generate_password(10)
     id = db.create_new_caretaker(email, password ,first_name,initial, paternal_last_name, maternal_last_name, phone_number)
 
     set_selected_caretaker(Caretaker("Caretaker", id,first_name,email,password,initial,paternal_last_name,maternal_last_name,phone_number,"T-Mobil",5000))
-
-    #send_email(first_name,paternal_last_name,password,email)
     pass
 
+#Inserts a new Resident
 def create_new_resident(first_name,initial,paternal_last_name,maternal_last_name,image,birthday,height):
     db.create_new_resident(first_name,initial,paternal_last_name,maternal_last_name,image,birthday,height,get_selected_caretaker().id,get_selected_caretaker().nursing_home_id)
 
-
+#Creates the medicaiton list pdf 
+# Returns a Buffer object with all the pdf information 
 def create_med_list_pdf(resident):
     # Create a buffer to store the PDF data
     buffer = BytesIO()
@@ -234,6 +223,7 @@ def create_med_list_pdf(resident):
     data = [[title,'','','','',''],
             ['Medication Name', 'Dosage (mg)','I take this for' ,'Morning\n(6 am - 10am)', 'Noon\n(11 am - 1 pm)', 'Evening\n(2 pm - 7 pm)', 'Bedtime\n(8 pm - 5 am)']]
 
+    # Loops through the medication list and adds them to the medication list
     for medication in db.get_medication_list(resident):
         test = []  # Create a new list for each medication
         for diagnostic in set(diagnosis.name for diagnosis in medication.get_diagnosis_list()):
@@ -352,6 +342,8 @@ def delete_img_graphs():
             else:
                 print(f'Error deleting files in {directory_path}: {e}')
 
+#Creates a comprehensive medical report with all information the resident information
+# Returns the buffer with all the pdf information
 def create_med_report_pdf(resident):
    # Create a buffer to store the PDF data
     buffer = BytesIO()
@@ -836,7 +828,6 @@ def create_med_report_pdf(resident):
         ('BACKGROUND', (2, 1), (2, 1), "#F7A64A"),  # Change background color of the third cell in the second row
         ('BACKGROUND', (3, 1), (3, 1), "#F07C7F"),  # Change background color of the fourth cell in the second row
         ('BACKGROUND', (4, 1), (4, 1), "#F1444A"),  # Change background color of the fifth cell in the second row
-
     ]))
 
     graph_data = resident.check_condition(db.get_medication_list(get_selected_resident()),[int(vital.heart_rate) for vital in get_vitals_list_resident(get_selected_resident())])
@@ -909,8 +900,6 @@ def create_med_report_pdf(resident):
     
     # Add a page break to start a new page
     story.append(PageBreak())
-
-    ######################################################
     
      # Create a new table for blood pressure data
     temp_data = [
@@ -1044,8 +1033,6 @@ def create_med_report_pdf(resident):
 
     # Add the second page content to the story
     story.extend(fifth_page_content)
-    ######################################################
-
 
     # Build the PDF document
     doc.build(story)
@@ -1056,7 +1043,8 @@ def create_med_report_pdf(resident):
     # Return the buffer containing the PDF data
     return buffer
 
-
+#Get the conecentration of a medicaiton for a specific resident
+# Return the concentration values
 def concen(medication,resident):
     from datetime import timedelta
     import math
@@ -1075,14 +1063,11 @@ def concen(medication,resident):
     # Create a list of timestamps from start_time to end_time at the specified interval
     time_stamps = [start_time + timedelta(hours=i) for i in range(0, int((end_time - start_time).total_seconds() // 3600))]
     # Define the drug's half-life in hours
-    half_life_hours = 6.2  # Adjust the half-life as needed
+    half_life_hours = medication.half_life
 
     # Calculate the decay rate based on half-life
     decay_rate = math.log(1/2) / half_life_hours
-
-    # Define your intake timestamps as datetime objects
     
-
     # Create a function to calculate drug concentration over time with spikes for each intake
     def calculate_concentration(time_stamps, decay_rate, intake_timestamps):
         current_concentration = 0.0
@@ -1108,11 +1093,13 @@ def concen(medication,resident):
     concentration_values = calculate_concentration(time_stamps, decay_rate, intake_timestamps)
     return concentration_values
 
-
+#Creates the auto generated message based on the condition that will appear on the comprehensive medical report
 def get_analytics_msg(condition,data):
+    #Checks if there is data to report
     if isinstance(data, int):
         return [Paragraph(f"There is not enough data for an analysis. Please enter more vitals for {condition}.")]
 
+    #Gets all the information related to the vitals
     vitals = data[7]
     spike_index = data[5]
     timestamps = data[8]
@@ -1133,7 +1120,8 @@ def get_analytics_msg(condition,data):
     expected = ""
     status = ""
     unit = ""
-
+    
+    #Checks which condition is being used and create the custom message for that condtion
     if condition == "Blood Pressure":
         unit = " mmHg"
         baseline_msg = str(resident.get_baseline([int(vital.systolic_blood_pressure) for vital in resident.get_vitals_list()]))
@@ -1161,6 +1149,7 @@ def get_analytics_msg(condition,data):
     analytic_info = f"An analysis of <b>{resident.first_name}'s</b> data related to {condition} shows the following characteristics. <br/>For the period from <b>{date_min.strftime('%B')} {date_min.day}</b> to <b>{date_max.strftime('%B')} {date_max.day}</b> the baseline {condition} is <b>{baseline_msg}{aonec_msg}</b>.<br/>"
     paragraphs.append(Paragraph(analytic_info))
 
+    #If there is a big anamoly in the data then create a section of the paragragh for that.
     if any(spike_index):
         spike_msg = f"<b>Spikes</b> that could warrant investigation; at "
         for i, index in enumerate(spike_index):
@@ -1178,7 +1167,7 @@ def get_analytics_msg(condition,data):
         paragraphs.append(Paragraph(spike_msg))
 
     
-
+    #Gets the medication that were started this month and list them
     for medication in medication_list:
         current_date = datetime.now()
         if (medication.start_date.year == current_date.year and medication.start_date.month == current_date.month):
@@ -1187,6 +1176,8 @@ def get_analytics_msg(condition,data):
    
     condition_medication_list = resident.medication_condition(condition, medication_list)
 
+    #If the resident is taking medicaiton for said condition then label it and show that stats for that medication
+     # Retrieves all the analytics and statistics associated with a that medication 
     if any(condition_medication_list):
         adherence_msg = f"Analyzing Medication Adherence for {condition} reveals that <br/>"
         shown_conditions = []
@@ -1222,10 +1213,11 @@ def get_analytics_msg(condition,data):
 
         paragraphs.append(Paragraph(adherence_msg))
 
-
+    #Traverses the baseline and finds out if its increasing, decreasing or is stable
     increasing = all(baseline[i] <= baseline[i + 1] for i in range(len(baseline) - 1))
     decreasing = all(baseline[i] >= baseline[i + 1] for i in range(len(baseline) - 1))
 
+    #Prints the message based on the result
     if increasing:
         status = "not getting better with the current treatment."
     elif decreasing:
@@ -1239,6 +1231,7 @@ def get_analytics_msg(condition,data):
 
     return paragraphs
 
+#Generates the qr code with the residents image in the center
 def generate_qr_with_logo(url,resident):
     from PIL import Image
     import requests
@@ -1355,6 +1348,7 @@ def header(canvas, doc, name,type):
 
     canvas.restoreState()
 
+#Executes the QR Code 
 def create_qr_codes(resident_list):
     # Create a BytesIO buffer to store the PDF content
     pdf_buffer = BytesIO()

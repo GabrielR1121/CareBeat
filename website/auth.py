@@ -24,6 +24,7 @@ def apply_no_cache(response):
 def login():
     session.clear()
     # Extract the 'next' parameter from the referrer URL
+    # This is for link redirection
     referrer_url = request.referrer
     parsed_referrer = urlparse(referrer_url)
     next_url = parse_qs(parsed_referrer.query).get('next', [None])[0]

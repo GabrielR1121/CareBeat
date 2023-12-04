@@ -3,28 +3,12 @@ from flask_login import login_required
 import json
 import plotly
 from . import dash
-from .control import (
-    get_selected_resident,
-    verify_id,
-    get_selected_user,
-    get_selected_medication,
-    create_med_list_pdf,
-    med_administered,
-    insert_new_medication,
-    insert_wellness_check,
-    get_medication_list_resident,
-    get_vitals_list_resident,
-    get_refill_list_resident,
-    get_all_medication_names,
-    create_new_caretaker,
-    create_new_resident,
-    get_resident_list,
-    create_med_report_pdf,
-    delete_img_graphs,
-    create_qr_codes,
-    add_refill_medication,
-    get_all_diagnosis_names,
-)
+from .control import (get_selected_resident,verify_id,get_selected_user,
+                      get_selected_medication,create_med_list_pdf,med_administered,
+                      insert_new_medication, insert_wellness_check,get_medication_list_resident,
+                      get_all_medication_names,create_new_caretaker,create_new_resident,
+                      get_resident_list,create_med_report_pdf,delete_img_graphs,
+                      create_qr_codes,add_refill_medication,get_all_diagnosis_names,)
 
 views = Blueprint("views", __name__)
 
@@ -50,12 +34,13 @@ def home():
         resident_list=get_resident_list(get_selected_user()),show_qr_code = True
     )
 
+#Route to add new caretaker
 @views.route("/add-new-caretaker",methods=["GET"])
 @login_required
 def add_new_caretaker():
     return render_template("add_new_caretaker.html")
 
-
+#Route to submit a new caretaker
 @views.route("/submit-new-caretaker",methods=["POST"])
 @login_required
 def submit_new_caretaker():
@@ -77,12 +62,13 @@ def submit_new_caretaker():
     return redirect(url_for("views.add_new_resident"))
 
 
+#Route to add a new resident
 @views.route("/add-new-resident",methods=["GET"])
 @login_required
 def add_new_resident():
     return render_template("add_new_resident.html")
 
-
+#Route to submit a new resident
 @views.route("/submit-new-resident",methods=["POST"])
 @login_required
 def submit_new_resident():
@@ -111,7 +97,7 @@ def submit_new_resident():
     else:
         return redirect(url_for("views.home"))
 
-
+#Route to the medication list
 @views.route("/medication-list", methods=["GET", "POST"])
 @login_required
 def medication_list():
@@ -188,7 +174,7 @@ def medication_list():
     else:
         return render_template("404_page.html")
 
-
+#Route to the qr code
 @views.route("/qr-medication/<int:resident_id>")
 @login_required
 def redirect_resident(resident_id):
@@ -268,7 +254,7 @@ def medication_dashboard():
     else:
         return "Resident or Medication not found", 404
 
-
+#Route to the medication list
 @views.route("/generate-medication-list")
 @login_required
 def generate_pdf():
@@ -283,6 +269,7 @@ def generate_pdf():
     )
     return response
 
+#Route for the comprehensive medical report
 @views.route("/generate-medication-report")
 @login_required
 def generate_report_pdf():
@@ -297,6 +284,7 @@ def generate_report_pdf():
     )
     return response
 
+#Route to admisnter medication
 @views.route("/administer-medication", methods=["POST"])
 @login_required
 def administer():
@@ -305,13 +293,13 @@ def administer():
     return "Medication Administered Successfully"
 
 
-
+#Route to preform a wellness check
 @views.route("/perform-wellness-check", methods=["GET"])
 @login_required
 def perform_wellness_check():
     return render_template("wellness_check.html", resident = get_selected_resident())
 
-
+#Route to submit the wellness check
 @views.route("/submit-wellness-check", methods=["POST"])
 @login_required
 def submit_wellness_check():
@@ -328,6 +316,7 @@ def submit_wellness_check():
 
     return redirect(url_for("views.medication_list"))
 
+#Route to generate the QR CODE
 @views.route("/generate-qr-codes")
 @login_required
 def generate_all_qr_codes():
@@ -340,7 +329,7 @@ def generate_all_qr_codes():
     ] = "inline; filename=Residents QR CODES.pdf"
     return response
 
-
+#Route to the qr code
 @views.route("/generate-qr-code")
 @login_required
 def generate_qr_code():
