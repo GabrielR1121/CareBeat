@@ -194,6 +194,9 @@ class Resident:
             for timestamp, vital_value in zip(timestamps, vital)
         }
 
+        # Filter data for the current month
+        current_month = datetime.now().strftime('%Y-%m')
+        
         timestamps = list(filtered_data.keys())
         # Create a new list of medications with start dates approximately matching the timestamps
         matching_medication = [medication for medication in medication_list if medication.start_date.strftime('%Y-%m') == current_month]
