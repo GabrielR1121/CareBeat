@@ -248,7 +248,6 @@ def createGraphNine(medication, resident):
 
     # This is the estimated initial start date if the treatment is administered perfectly.
     estimated_end_date = medication.get_estimated_end_date().date()
-    print(estimated_end_date)
 
     # The total amount of pills this medication has
     total_pills = medication.pill_quantity
@@ -269,7 +268,6 @@ def createGraphNine(medication, resident):
     # Calculate a new estimated end date based on actual intake
     actual_end_date = dates_actual[-1]
     new_estimated_end_date = actual_end_date + timedelta(days=(total_pills - actual_cumulative_pills[-1]) / daily_pills)
-    print(new_estimated_end_date)
 
     # Check if the new estimated end date is in the past
     if new_estimated_end_date < actual_end_date:
@@ -292,12 +290,6 @@ def createGraphNine(medication, resident):
 
     # Calculate the percentage deviation
     percentage_deviation = (deviation / last_expected_cumulative) * 100
-
-    # Check if the percentage deviation is less than 5%
-    if percentage_deviation < 5:
-        print("Percentage deviation is less than 5%. The Deviation is {0}".format(percentage_deviation))
-    else:
-        print("Percentage deviation is 5% or higher. The Deviation is {0}".format(percentage_deviation))
 
     # Create the layout for the chart
     layout = go.Layout(
@@ -327,7 +319,7 @@ def createGraphTen(medication, resident):
     # Create a list of timestamps from start_time to end_time at the specified interval
     time_stamps = [start_time + timedelta(hours=i) for i in range(0, int((end_time - start_time).total_seconds() // 3600))]
     # Define the drug's half-life in hours
-    half_life_hours = 6.2  # Adjust the half-life as needed
+    half_life_hours = float(medication.half_life)  # Adjust the half-life as needed
 
     # Calculate the decay rate based on half-life
     decay_rate = math.log(1/2) / half_life_hours

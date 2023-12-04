@@ -47,7 +47,7 @@
 
             <div class="card-body">
                 <!-- Add the opening <form> tag here -->
-                <form action="/login" method="post">
+                <form action="{{ url_for('auth.login') }}" method="post">
                     <div class="form-group">
                         <label for="loginRole">Select Login Role:</label>
                         <select class="form-control" id="loginRole" name="loginRole">
@@ -93,6 +93,18 @@
                 document.getElementById("employeeIDGroup").style.display = "block";
             }
         });
+        function togglePassword() {
+            var passwordInput = document.getElementById("password");
+            var togglePasswordBtn = document.getElementById("togglePassword");
+
+            if (passwordInput.type === "password") {
+                passwordInput.type = "text";
+                togglePasswordBtn.innerHTML = '<i class="fa fa-eye-slash" aria-hidden="true" onclick="togglePassword()"></i>';
+            } else {
+                passwordInput.type = "password";
+                togglePasswordBtn.innerHTML = '<i class="fa fa-eye" aria-hidden="true" onclick="togglePassword()"></i>';
+            }
+        }
     </script>
 </body>
 

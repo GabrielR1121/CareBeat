@@ -4,6 +4,7 @@ import random
 from scipy.stats import linregress
 import numpy as np
 from fuzzywuzzy import fuzz
+from decimal import Decimal
 
 class Resident:
     '''
@@ -11,18 +12,12 @@ class Resident:
     '''
     
     vitals_list = []
-    systolic_baseline = 0
     temp_check = weight_check= systolic_bp_check = diastolic_bp_check = heart_rate_check = glucose_check = False
 
-    min_temp = 97.5
-    max_temp = 100.5
+    min_temp = 95
+    max_temp = 100.4
 
-    resident_height = random.uniform(1.45, 1.95)
-
-    min_BMI = 18.5
-    max_BMI = 24.9
-
-    min_systolic_bp = 89
+    min_systolic_bp = 90
     max_systolic_bp = 121
 
     min_diastolic_bp = 61
@@ -31,10 +26,9 @@ class Resident:
     min_heart_rate = 60
     max_heart_rate = 100
 
-    min_glucose = 30
-    max_glucose = 130
+    min_glucose = 94
+    max_glucose = 140
 
-    resident_BMI = 0
     medication_list = list()
 
     def __init__(self, id, first_name,initial,paternal_last_name, maternal_last_name,image,birthday):
@@ -96,24 +90,18 @@ class Resident:
         
         active_flags  = []
         if len(self.vitals_list) >=1:
-            
-            #resident_BMI = float(latestVitals.weight) / (self.resident_height ** 2)
 
             if self.get_baseline([int(vital.temperature) for vital in self.vitals_list]) < self.min_temp or self.get_baseline([int(vital.temperature) for vital in self.vitals_list]) > self.max_temp:
                 active_flags.append("Temp")
 
-            #if resident_BMI < self.min_BMI or resident_BMI > self.max_BMI:
-
-             #   active_flags.append("BMI")
-
-            if self.get_baseline([vital.systolic_blood_pressure for vital in self.vitals_list]) < self.min_systolic_bp or self.get_baseline([vital.systolic_blood_pressure for vital in self.vitals_list]) > self.max_systolic_bp:
-                active_flags.append(self.check_blood_pressure())
+            if self.get_baseline([vital.systolic_blood_pressure for vital in self.vitals_list]) < self.min_systolic_bp or self.get_baseline([vital.diastolic_blood_pressure for vital in self.vitals_list]) > self.max_systolic_bp:
+                active_flags.append("Blood Pressure")
             
             if self.get_baseline([vital.heart_rate for vital in self.vitals_list]) < self.min_heart_rate or self.get_baseline([vital.heart_rate for vital in self.vitals_list]) > self.max_heart_rate:
 
-                active_flags.append("Heart_rate")
+                active_flags.append("Heart Rate")
 
-            if self.get_baseline([int(vital.glucose) for vital in self.vitals_list]) < self.min_glucose or self.get_baseline([int(vital.glucose) for vital in self.vitals_list]) > self.min_glucose:
+            if self.get_baseline([int(vital.glucose) for vital in self.vitals_list]) < self.min_glucose or self.get_baseline([int(vital.glucose) for vital in self.vitals_list]) > self.max_glucose:
 
                 active_flags.append("Glucose")
             
@@ -134,8 +122,6 @@ class Resident:
             condition = "High: Stage 1 Hypertension"
         elif systolic_bp > 160 or diastolic_bp > 100:
             condition = "High: Stage 2 Hypertension"
-        else:
-            condition = "Blood pressure values not within defined ranges"
 
         
         return condition
@@ -147,15 +133,42 @@ class Resident:
         if 99 <= glucose <= 140:
             condition = 'Normal'
         elif 140 <= glucose <= 160:
-            conditon = 'Imparied Glucose'
+            condition = 'Imparied Glucose'
         else:
             condition = 'Diabetic'
 
         
         return condition
+    
+    def check_heart_rate(self):
+        pulse = self.get_baseline([int(vital.heart_rate) for vital in self.vitals_list])
+        if pulse <= 59:
+            return "Low"
+        elif 60 <= pulse < 100:
+            return "Normal"
+        elif 100 <= pulse < 120:
+            return "Mild Tachycardia"
+        elif 120 <= pulse < 150:
+            return 'Moderate Tachycardia'
+        else:
+            return "Severe Tachycardia"
+        
+    def check_temp(self):
+        temp = self.get_baseline([int(vital.temperature) for vital in self.vitals_list])
 
+        if temp <95:
+            return "Hypothermia"
+        elif 95 <= temp < 100.4:
+            return "Normal"
+        elif 100.4 <= temp < 104.0:
+            return "Fever"
+        else:
+            return "Hyperthermia"
 
     def check_condition(self,medication_list,vital):
+        # Check if vital has less than 2 items
+        if len(vital) < 2:
+            return 0
         timestamps = [time.timestamp for time in self.vitals_list]
 
         # Filter data for the current month
@@ -163,7 +176,6 @@ class Resident:
         filtered_data = {
             timestamp: vital_value
             for timestamp, vital_value in zip(timestamps, vital)
-            if timestamp.strftime('%Y-%m') == current_month
         }
 
         timestamps = list(filtered_data.keys())
@@ -198,10 +210,14 @@ class Resident:
             spike_data = [vital[i] for i in all_data]
             flag = True
 
-        return [flag, spike_data, outliers_vital, range(len(vital)), baseline_vital, all_data, matching_medication, vital]
+        return [flag, spike_data, outliers_vital, range(len(vital)), baseline_vital, all_data, matching_medication, vital,timestamps]
 
     
     def get_baseline(self,vital):
+
+        # Check if vital has less than 2 items
+        if len(vital) < 2:
+            return 0
         timestamps = [time.timestamp for time in self.vitals_list]
 
         # Filter data for the current month
@@ -209,7 +225,6 @@ class Resident:
         filtered_data = {
             timestamp: vital
             for timestamp, vital in zip(timestamps, vital)
-            if timestamp.strftime('%Y-%m') == current_month
         }
         timestamps = list(filtered_data.keys())
          # Calculate baseline for vital data
@@ -230,7 +245,6 @@ class Resident:
         # Calculate baseline for vital data without outliers
         slope, intercept, _, _, _ = linregress(range(len(filtered_vital)), filtered_vital)
         baseline_vital = np.array([slope * i + intercept for i in range(len(vital))])
-
         return round(sum(baseline_vital)/len(baseline_vital))
     
     #Associates a medicaiton with a specific condition
@@ -238,8 +252,12 @@ class Resident:
         #Determines the condition in order to search accordingly
         if type == 'Blood Pressure':
             conditions = ["Low Blood Pressure", "Pre-Hypertension", "High: Stage 1 Hypertension", "High: Stage 2 Hypertension"]
-        else:
+        elif type == 'Glucose':
             conditions = ["Diabetes"]
+        elif type == 'Pulse':
+            conditions = ["Tachycardia"]
+        else:
+            conditions = ["Temperature"]
 
         
         filtered_medications = []
@@ -256,7 +274,6 @@ class Resident:
                     # Adjust the threshold based on your preference
                     if similarity_ratio > 70:  # You can adjust this threshold
                         filtered_medications.append(medication)
-                        print(medication.name)
                         break  # Break out of the loop if a match is found
         return filtered_medications
 
@@ -304,6 +321,20 @@ class Resident:
 
     def get_medication_list(self):
         return self.medication_list
+    
+    def calculate_A1C(self):
+        glucose_list = []
+        for vital in self.vitals_list:
+            glucose_list.append(vital.glucose)
+        average_glucose = sum(glucose_list) / len(glucose_list)
+
+        # Convert average_glucose to Decimal before performing the operation
+        average_glucose_decimal = Decimal(str(average_glucose))
+        
+        # Use Decimal constants to ensure both operands are Decimal
+        result = (average_glucose_decimal + Decimal('46.7')) / Decimal('28.7')
+        
+        return round(result,1)
 
 class Caretaker(UserMixin):
     '''
@@ -391,6 +422,8 @@ class Nurse(UserMixin):
 
     def get_resident_list(self):
         return self.resident_list
+    
+
 
 class Medication:
     '''
@@ -404,9 +437,10 @@ class Medication:
     noon_bool = str()
     evening_bool = str()
     bedtime_bool = str()
+    refill_bool = False
     priority = int()
 
-    def __init__(self, id, name, dosage, pill_quantity, pill_frequency, refill_quantity,start_date, perscription_date):
+    def __init__(self, id, name, dosage, pill_quantity, pill_frequency, refill_quantity,start_date, perscription_date,half_life):
         '''
         Constructor to assign the needed variables
         '''
@@ -418,6 +452,7 @@ class Medication:
         self.refill_quantity = refill_quantity
         self.start_date = start_date
         self.perscription_date = perscription_date
+        self.half_life = half_life
 
     def calculate_priority(self, emergency_admin):
         #Time until next dose
@@ -428,6 +463,7 @@ class Medication:
         HIGH_PRIORITY = 1
         MEDIUM_PRIORITY = 2
         LOW_PRIORITY = 3
+        NO_PRIORITY = 4
 
         # Set priority based on criteria
         if time_until_next_dose <= 2:  # If the next dose is within 2 hours, consider high priority
@@ -440,6 +476,11 @@ class Medication:
         for medication in emergency_admin:
             if self.name == medication.name:
                 self.priority = CRITICAL_PRIORITY
+        
+        if (self.refill_quantity - self.amount_refill()) > 0 and self.medication_taken() <= self.pill_quantity*0.2:
+            self.priority = CRITICAL_PRIORITY
+        elif self.refills_left() == 0 and (self.medication_taken() ==0):
+            self.priority = NO_PRIORITY
 
     def get_last_taken(self):
         if self.pills_list:
@@ -448,7 +489,7 @@ class Medication:
             return self.start_date
     
     def get_time_frequency(self):
-        return 24/self.pill_quantity
+        return 24/self.pill_frequency
     
     def next_dose(self):
         return self.get_last_taken() + timedelta(hours=self.get_time_frequency())
@@ -552,6 +593,39 @@ class Medication:
     def get_start_date(self):
         import calendar
         return "{0}-{1}-{2}".format(self.start_date.day,calendar.month_abbr[self.start_date.month],self.start_date.year)
+    
+    def amount_refill(self):
+        count = 0
+        for _ in self.refill_list:
+            count+=1
+
+        return count
+    
+    def medication_taken(self):
+        total=0
+        rem = 0
+        for _ in self.pills_list:
+            total +=1
+        
+
+        if (len(self.refill_list) != 0 and not self.refill_bool):
+            total = (self.pill_quantity - total) + self.pill_quantity
+            self.refill_bool = True
+            
+        else:
+            rem = self.pill_quantity - total
+
+        return rem
+    
+    def refills_left(self):
+        Refills_left = self.refill_quantity-len(self.refill_list)
+        if Refills_left > 0 and self.pill_quantity-self.medication_taken() <= self.pill_quantity*0.2:
+            return self.pill_quantity
+        else:
+            return 0
+
+    def total_available_pills(self):
+       return (self.pill_quantity - self.medication_taken()) + self.refills_left()
 
 
 

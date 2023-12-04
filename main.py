@@ -1,4 +1,5 @@
 from website import create_app
+from website.config import config
 """
 Running this file will launch the server and start the flask application.
 This application was created by Gabriel E. Rodriguez Garcia.
@@ -10,6 +11,6 @@ app = create_app()
 
 
 if __name__ == '__main__':
-    app.run(host="0.0.0.0", port=83, debug=True)
+    app.run(host=config.HOST, port=config.PORT, debug=config.DEBUG)
 
    

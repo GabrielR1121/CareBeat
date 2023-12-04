@@ -10,6 +10,10 @@
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css"
         crossorigin="anonymous" />
 
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.1/css/all.min.css"
+        integrity="sha512-xzi9RiDOVWwtQvZ6DOWLEpSS33+K8FQTFOtN4DxYvIRBdUmp1/JoOrnptTGFWg5YbBy4g20T/PsRUuIRinTEQg=="
+        crossorigin="anonymous" referrerpolicy="no-referrer" />
+
     <link rel="stylesheet" href="../static/style.css">
 
     <style>
@@ -75,18 +79,25 @@
                     %}style="display: none;" {% endif %}><a href="/add-medication-page">Add New Medication</a></li>
                 <li class="flyout-item" id="medicationList" {% if showMedicationList %}style="display: block;" {% else
                     %}style="display: none;" {% endif %}><a href="/generate-medication-list">Medication List</a></li>
-                <li class="flyout-item" id="wellness_check" {% if showMedicationList %}style="display: block;" {% else
-                    %}style="display: none;" {% endif %}><a href="/perform-wellness-check">Perform Wellness Check</a></li>
-                <li class="flyout-item" id="add_resident" {% if add_resident %}style="display: block;" {% else
+                <li class="flyout-item" id="wellness_check" {% if nurse_duty %}style="display: block;" {% else
+                    %}style="display: none;" {% endif %}><a href="/perform-wellness-check">Perform Wellness Check</a>
+                </li>
+                <li class="flyout-item" id="add_resident" {% if show_qr_code %}style="display: block;" {% else
                     %}style="display: none;" {% endif %}><a href="/add-new-caretaker">Add New Resident</a></li>
                 <li class="flyout-item" id="medication_report" {% if showMedicationList %}style="display: block;" {%
-                    else %}style="display: none;" {% endif %}><a href="/generate-medication-report">Medication Report</a></li>
+                    else %}style="display: none;" {% endif %}><a href="/generate-medication-report">Medication
+                        Report</a></li>
+                <li class="flyout-item" id="QR-Generate" {% if show_qr_code %}style="display: block;" {% else
+                    %}style="display: none;" {% endif %}><a href="/generate-qr-codes">Generate QR Codes for all</a></li>
+                <li class="flyout-item" id="QR-Generate" {% if nurse_duty %}style="display: block;" {% else
+                    %}style="display: none;" {% endif %}><a href="/generate-qr-code">Generate Specific QR Code</a></li>
                 <li><a href="/logout">Logout</a></li>
             </ul>
         </div>
         <div class="row justify-content-center title-banner">
             <!-- Hamburger menu icon to toggle the flyout menu -->
-            <button class="toggle-button" id="toggleMenuButton">
+            <button class="toggle-button" id="toggleMenuButton"
+                style="color: #FFEE99; background-color: yourBackgroundColor;">
                 &#9776; <!-- Hamburger icon -->
             </button>
             <div class="col-auto">

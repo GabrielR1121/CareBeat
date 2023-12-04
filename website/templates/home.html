@@ -1,36 +1,41 @@
-{% extends "base.html"%} {% block title %}Home{% endblock %} {% block subtitle %}Home Page{% endblock
-%}
+{% extends "base.html" %}
+{% block title %}Home{% endblock %}
+{% block subtitle %}Home Page{% endblock %}
 
 {% block content %}
 
-<div class="container-fluid">
-    <div class="d-flex justify-content-center">
-        <div class="card-deck">
+<div style="display: flex; justify-content: center;">
+    <div class="container-fluid">
+        <div class="row mb-4">
             {% for resident in resident_list %}
-            <div class="card"
-                style="max-width: 250px; {% if resident.get_active_flags()|length > 0 %}border: 2px solid red;{% else %}border: 2px solid gray; {% endif %}">
-                <img class="card-img-top img-fluid" src="{{ resident.get_image() }}" alt="{{ resident.get_full_name }}">
-                <div class="card-body">
-                    <h5 class="card-title">{{ resident.get_full_name() }}</h5>
-                    <p class="card-text">Age: {{ resident.get_age() }}</p>
-                    <p class="card-text">Active Flag:
-                        {% if resident.get_active_flags() %}
-                        {{ resident.get_active_flags()|join(", ") }}
-                        {% else %}
-                        None
-                        {% endif %}
-                    </p>
-                </div>
-                <form method="POST">
-                    <input type="hidden" name="resident_id" value="{{ resident.id }}">
-                    <div class="card-footer d-flex justify-content-center">
-                        <a href="#" onclick="this.parentNode.parentNode.submit(); return false;"
-                            class="btn btn-primary">View Meds</a>
+            <div class="col-lg-3 col-md-4 col-sm-6 mb-4">
+                <div class="card"
+                    style="max-width: 300px; {% if resident.get_active_flags()|length > 0 %}border: 2px solid red;{% else %}border: 2px solid gray; {% endif %}">
+                    <img class="card-img-top img-fluid" src="{{ resident.get_image() }}"
+                        alt="{{ resident.get_full_name }}">
+                    <div class="card-body">
+                        <h5 class="card-title">{{ resident.get_full_name() }}</h5>
+                        <p class="card-text">Age: {{ resident.get_age() }}</p>
+                        <p class="card-text">Active Flag:
+                            {% if resident.get_active_flags() %}
+                            {{ resident.get_active_flags()|join(", ") }}
+                            {% else %}
+                            None
+                            {% endif %}
+                        </p>
                     </div>
-                </form>
+                    <form method="POST">
+                        <input type="hidden" name="resident_id" value="{{ resident.id }}">
+                        <div class="card-footer d-flex justify-content-center">
+                            <a href="#" onclick="this.parentNode.parentNode.submit(); return false;"
+                                class="btn btn-primary">View Meds</a>
+                        </div>
+                    </form>
+                </div>
             </div>
             {% endfor %}
         </div>
     </div>
 </div>
+
 {% endblock %}

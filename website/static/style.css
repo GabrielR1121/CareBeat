@@ -110,3 +110,9 @@
     border-radius: 10px;
     /* Optional: Add rounded corners */
 }
+
+.red-icon {
+    color: red;
+    margin-right: 5px;
+    /* Adjust the margin as needed */
+}

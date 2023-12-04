@@ -14,12 +14,16 @@ from .control import (
     insert_wellness_check,
     get_medication_list_resident,
     get_vitals_list_resident,
+    get_refill_list_resident,
     get_all_medication_names,
     create_new_caretaker,
     create_new_resident,
     get_resident_list,
     create_med_report_pdf,
     delete_img_graphs,
+    create_qr_codes,
+    add_refill_medication,
+    get_all_diagnosis_names,
 )
 
 views = Blueprint("views", __name__)
@@ -43,7 +47,7 @@ def home():
     #Else Get request, Show home page, validate what to show in the flyout menu and get the list of residents
     # associated with the user
     return render_template("home.html",showMedicationList=False,add_resident = True,
-        resident_list=get_resident_list(get_selected_user()),
+        resident_list=get_resident_list(get_selected_user()),show_qr_code = True
     )
 
 @views.route("/add-new-caretaker",methods=["GET"])
@@ -108,68 +112,88 @@ def submit_new_resident():
         return redirect(url_for("views.home"))
 
 
-
-# Creates a route to the medication list
 @views.route("/medication-list", methods=["GET", "POST"])
 @login_required
 def medication_list():
+    validate = False
     selected_resident = get_selected_resident()
+
     if selected_resident:
-        medication_list = get_medication_list_resident(get_selected_resident())
-        delete_img_graphs()
+        for resident in get_resident_list(get_selected_user()):
+            if resident.id == selected_resident.id:
+                validate = True
 
-        if request.method == "POST":
-            medication_id = request.form.get("medication_id")
-            if medication_id:
-                verify_id(medication_id, "Medication")
-                return redirect(url_for("views.medication_dashboard"))
+    if validate:
+        if selected_resident:
+            medication_list = get_medication_list_resident(get_selected_resident())
+            delete_img_graphs()
+
+            if request.method == "POST":
+                medication_id = request.form.get("medication_id")
+                if medication_id:
+                    verify_id(medication_id, "Medication")
+                    return redirect(url_for("views.medication_dashboard"))
+                
+            #Default all conditions to False
+            temp_check = weight_check= systolic_bp_check = diastolic_bp_check = heart_rate_check = glucose_check = False
+
+            Emergency_Admin = []
+
+            active_flags = selected_resident.get_active_flags()
+
+            # resident_BMI = float(latestVitals.weight) / (resident_height ** 2)
+
+            if "Temp" in active_flags:
+                Emergency_Admin += get_selected_resident().medication_condition("Temperature", get_medication_list_resident(get_selected_resident()))
+                temp_check = True
+
+            #  if resident_BMI < min_BMI or resident_BMI > max_BMI:
+            #     weight_check = True
+
+            # confirm,spike,outliers,range_t,baseline,all,match,dump = get_selected_resident().check_condition(get_medication_list_resident(get_selected_resident()),[vital.systolic_blood_pressure for vital in get_vitals_list_resident(get_selected_resident())])
+            # if confirm:
+            if any(category in active_flags for category in ["Low Blood Pressure", "Pre-Hypertension", "High: Stage 1 Hypertension", "High: Stage 2 Hypertension"]):
+                Emergency_Admin += get_selected_resident().medication_condition("Blood Pressure", get_medication_list_resident(get_selected_resident()))
+                systolic_bp_check = True
+
+            if "Heart Rate" in active_flags:
+                Emergency_Admin += get_selected_resident().medication_condition("Pulse", get_medication_list_resident(get_selected_resident()))
+                heart_rate_check = True
+
+            if "Glucose" in active_flags:
+                Emergency_Admin += get_selected_resident().medication_condition("Glucose", get_medication_list_resident(get_selected_resident()))
+                glucose_check= True
+
+            for index in range(len(medication_list)):
+                medication_list[index].calculate_priority(Emergency_Admin)
+
+            # Custom sorting key function
+            def sort_key(medication):
+                return (medication.priority, medication.name)
             
-        #Default all conditions to False
-        temp_check = weight_check= systolic_bp_check = diastolic_bp_check = heart_rate_check = glucose_check = False
+            priority_medication = sorted(medication_list,key=sort_key)
 
-        Emergency_Admin = []
-
-        active_flags = selected_resident.get_active_flags()
-
-        # resident_BMI = float(latestVitals.weight) / (resident_height ** 2)
-
-        if "Temp" in active_flags:
-            temp_check = True
-
-        #  if resident_BMI < min_BMI or resident_BMI > max_BMI:
-        #     weight_check = True
-
-        # confirm,spike,outliers,range_t,baseline,all,match,dump = get_selected_resident().check_condition(get_medication_list_resident(get_selected_resident()),[vital.systolic_blood_pressure for vital in get_vitals_list_resident(get_selected_resident())])
-        # if confirm:
-        if any(category in active_flags for category in ["Low Blood Pressure", "Pre-Hypertension", "High: Stage 1 Hypertension", "High: Stage 2 Hypertension"]):
-            Emergency_Admin = get_selected_resident().medication_condition("Blood Pressure" ,get_medication_list_resident(get_selected_resident()))
-            systolic_bp_check = True
-
-        if "Heart_rate" in active_flags:
-            heart_rate_check = True
-
-        if "Glucose" in active_flags:
-            glucose_check= True
-
-        for index in range(len(medication_list)):
-            medication_list[index].calculate_priority(Emergency_Admin)
-
-        # Custom sorting key function
-        def sort_key(medication):
-            return (medication.priority, medication.name)
-        
-        priority_medication = sorted(medication_list,key=sort_key)
-
-        return render_template("medication_list.html",showAddMedication=True if get_selected_user().role == "Nurse" else False,
-            showMedicationList=True,add_resident = False,user=get_selected_user(),resident=selected_resident,
-            medication_list=priority_medication,temp_check = temp_check,weight_check = weight_check,
-            systolic_bp_check = systolic_bp_check,diastolic_bp_check = diastolic_bp_check,
-            heart_rate_check = heart_rate_check,glucose_check = glucose_check,
-            Emergency_Admin = Emergency_Admin,
-        )
+            return render_template("medication_list.html",showAddMedication=True if get_selected_user().role == "Nurse" else False,
+                showMedicationList= True,
+                nurse_duty = True if get_selected_user().role == "Nurse" else False,
+                show_qr_code = False,
+                add_resident = False,user=get_selected_user(),resident=selected_resident,
+                medication_list=priority_medication,temp_check = temp_check,weight_check = weight_check,
+                systolic_bp_check = systolic_bp_check,diastolic_bp_check = diastolic_bp_check,
+                heart_rate_check = heart_rate_check,glucose_check = glucose_check,
+                Emergency_Admin = Emergency_Admin,
+            )
+        else:
+            return render_template("404_page.html")
     else:
-        return "Resident not found", 404
+        return render_template("404_page.html")
 
+
+@views.route("/qr-medication/<int:resident_id>")
+@login_required
+def redirect_resident(resident_id):
+    verify_id(resident_id, "Resident")
+    return redirect(url_for("views.medication_list"))
 
 # Creates a route to the medication dashboard
 @views.route("/add-medication-page", methods=["GET"])
@@ -178,8 +202,17 @@ def add_medication_page():
     return render_template(
         "add_medication.html",
         known_medication=get_all_medication_names(),
+        known_diagnosis = get_all_diagnosis_names(),
         resident=get_selected_resident(),
     )
+
+# Creates a route to the medication dashboard
+@views.route("/refill-medication", methods=["POST"])
+@login_required
+def add_refill():
+    medication_id = request.form.get("medication_id")
+    add_refill_medication(medication_id)
+    return "Medication Refilled Successfully"
 
 
 # Creates a route to the medication dashboard
@@ -195,9 +228,9 @@ def add_medication():
     refill_quantity = request.form.get("refillQuantity")
     start_date = request.form.get("startDate")
     prescription_date = request.form.get("prescriptionDate")
-    description = request.form.get("description")
+    selected_purposes = request.form.getlist('medicationPurpose[]')
 
-    insert_new_medication(medication_name,route,dosage,pill_quantity,pill_frequency,refill_quantity,start_date,prescription_date,description)
+    insert_new_medication(medication_name,route,dosage,pill_quantity,pill_frequency,refill_quantity,start_date,prescription_date,selected_purposes)
 
     
     return redirect(url_for("views.medication_list"))
@@ -294,3 +327,28 @@ def submit_wellness_check():
     insert_wellness_check(feeling,description,temperature, weight, systolic_bp,diastolic_bp,heart_rate,glucose)
 
     return redirect(url_for("views.medication_list"))
+
+@views.route("/generate-qr-codes")
+@login_required
+def generate_all_qr_codes():
+    # Create a PDF document using reportlab
+    resident_list = get_resident_list(get_selected_user())
+    response = make_response(create_qr_codes(resident_list))
+    response.headers["Content-Type"] = "application/pdf"
+    response.headers[
+        "Content-Disposition"
+    ] = "inline; filename=Residents QR CODES.pdf"
+    return response
+
+
+@views.route("/generate-qr-code")
+@login_required
+def generate_qr_code():
+    # Create a PDF document using reportlab
+    resident = get_selected_resident()
+    response = make_response(create_qr_codes([resident]))
+    response.headers["Content-Type"] = "application/pdf"
+    response.headers[
+        "Content-Disposition"
+    ] = f"inline; filename={resident.get_full_name()} QR CODE.pdf"
+    return response

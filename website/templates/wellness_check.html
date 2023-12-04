@@ -72,35 +72,35 @@ endblock
 
         <button type="submit" class="btn btn-primary mt-3">Submit</button>
     </form>
+</div>
+<style>
+    .vitals-section {
+        display: none;
+    }
+</style>
 
-    <style>
-        .vitals-section {
-            display: none;
+<script>
+    function toggleVitals() {
+        var vitalsSection = document.querySelector(".vitals-section");
+        if (vitalsSection.style.display === "none") {
+            vitalsSection.style.display = "block";
+        } else {
+            vitalsSection.style.display = "none";
         }
-    </style>
+    }
 
-    <script>
-        function toggleVitals() {
-            var vitalsSection = document.querySelector(".vitals-section");
-            if (vitalsSection.style.display === "none") {
-                vitalsSection.style.display = "block";
-            } else {
-                vitalsSection.style.display = "none";
-            }
+    // Add a submit event listener to the form for client-side validation
+    const wellnessForm = document.getElementById("wellness-form");
+    wellnessForm.addEventListener("submit", function (event) {
+        const feeling = parseInt(document.querySelector('input[name="feeling"]:checked').value);
+        const vitalsSection = document.querySelector(".vitals-section");
+
+        // Check if feeling > 3 and vitals are not filled out
+        if (feeling > 3 && vitalsSection.style.display === "none") {
+            event.preventDefault(); // Prevent form submission
+            alert("Please fill out the vitals for ratings greater than 3.");
         }
-
-        // Add a submit event listener to the form for client-side validation
-        const wellnessForm = document.getElementById("wellness-form");
-        wellnessForm.addEventListener("submit", function (event) {
-            const feeling = parseInt(document.querySelector('input[name="feeling"]:checked').value);
-            const vitalsSection = document.querySelector(".vitals-section");
-
-            // Check if feeling > 3 and vitals are not filled out
-            if (feeling > 3 && vitalsSection.style.display === "none") {
-                event.preventDefault(); // Prevent form submission
-                alert("Please fill out the vitals for ratings greater than 3.");
-            }
-        });
-    </script>
+    });
+</script>
 </div>
 {% endblock %}

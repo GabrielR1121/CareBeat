@@ -1,6 +1,8 @@
-from flask import Blueprint,render_template, request, flash,redirect, url_for
+from flask import Blueprint,render_template, request, flash,redirect, url_for,session
+from urllib.parse import urlparse, parse_qs
 from website.config import db
 from flask_login import login_user, login_required, logout_user
+from .control import verify_id
 
 auth = Blueprint('auth',__name__)
 
@@ -20,7 +22,11 @@ def apply_no_cache(response):
 #Creates a route for the login
 @auth.route('/login', methods=['GET','POST'])
 def login():
-    next_url = request.args.get('next')
+    session.clear()
+    # Extract the 'next' parameter from the referrer URL
+    referrer_url = request.referrer
+    parsed_referrer = urlparse(referrer_url)
+    next_url = parse_qs(parsed_referrer.query).get('next', [None])[0]
     user = None
     if request.method == 'POST':
         #Receive role and password from submitted HTML Form
@@ -46,14 +52,14 @@ def login():
                 flash("Logged in succesfully")
                 #Method used internally in Flask-Login Library to login user
                 login_user(user)
-                
+                verify_id(user.id, "User")
                 return redirect(next_url or url_for('views.home'))
             else:
                 flash('Incorrect password, try again',category="error")
         else:
             flash("Email does not exit.", category="error")
             
-    return render_template("login.html")
+    return render_template("login.html",next_url=next_url)
 
 #Creates Route to logout
 @auth.route('/logout')

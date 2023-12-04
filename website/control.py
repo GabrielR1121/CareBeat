@@ -4,11 +4,12 @@ from website.config import db
 from .models import Wellness_check,Vitals
 from flask_login import current_user
 from reportlab.lib.pagesizes import letter
-from reportlab.platypus import Table, TableStyle, Paragraph, PageTemplate,Frame, BaseDocTemplate,Image,Spacer,PageBreak
+from reportlab.platypus import Table, TableStyle, Paragraph, PageTemplate,Frame,Image ,BaseDocTemplate,Spacer,PageBreak
 from reportlab.lib.styles import ParagraphStyle
 from reportlab.lib import colors
 from reportlab.lib.styles import getSampleStyleSheet
 from io import BytesIO
+from reportlab.pdfgen import canvas
 import datetime
 import secrets
 import string
@@ -17,6 +18,9 @@ from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from .models import Caretaker
 from datetime import datetime
+import qrcode
+
+from website.config import config
 
 #Gets Selected Resident from the pickle in the session
 def get_selected_resident():
@@ -99,13 +103,23 @@ def med_administered(med_id):
             db.insert_into_pill(medication,get_selected_resident(),get_selected_user())
             print("medication was administered")
             break
+
+def add_refill_medication(med_id):
+    for medication in get_medication_list_resident(get_selected_resident()):
+        if int(med_id) == medication.id:
+            db.insert_into_refill(medication,get_selected_resident())
+            medication.refill_bool = True
+            print("medication was refilled")
+            break
+
+
 def get_resident_list(user):
     return db.get_residents(user)
 
-def insert_new_medication(medication_name,route,dosage,pill_quantity,pill_frequency,refill_quantity,start_date,prescription_date,description):
+def insert_new_medication(medication_name,route,dosage,pill_quantity,pill_frequency,refill_quantity,start_date,prescription_date,diagnosis_list):
     id = db.find_med_id(medication_name)
 
-    db.add_new_medication(get_selected_resident(),id,medication_name,route,dosage,pill_quantity,pill_frequency,refill_quantity,start_date,prescription_date,)
+    db.add_new_medication(get_selected_resident(),id,medication_name,route,dosage,pill_quantity,pill_frequency,refill_quantity,start_date,prescription_date,diagnosis_list)
 
 def insert_wellness_check(feeling, description, temperature,weight,systolic_bp,diastolic_bp,heart_rate,glucose):
     vitals = None
@@ -116,6 +130,11 @@ def insert_wellness_check(feeling, description, temperature,weight,systolic_bp,d
     wellness = Wellness_check( rating = feeling, description= description)
     db.insert_wellness_check(wellness,get_selected_resident(),vitals)
 
+
+
+
+
+
 def get_medication_list_resident(resident):
     return db.get_medication_list(resident)
 
@@ -125,8 +144,19 @@ def get_vitals_list_resident(resident):
 def get_wellness_check_list_resident(resident):
     return db.get_wellness_checks(resident)
 
+def get_refill_list_resident(resident,medication):
+    return db.get_refill_list(resident,medication)
+
+def get_caretaker_resident(resident):
+    return db.get_caretaker_resident(resident)
+
+
+
 def get_all_medication_names():
     return db.get_all_medication_names()
+
+def get_all_diagnosis_names():
+    return db.get_all_diagnosis_names()
 
 def generate_password(length=12):
     # Define characters to include in the password
@@ -202,12 +232,12 @@ def create_med_list_pdf(resident):
 
     # Define data dynamically using a for loop
     data = [[title,'','','','',''],
-            ['Medication Name', 'Dosage','I take this for' ,'Morning\n(6 am - 10am)', 'Noon\n(11 am - 1 pm)', 'Evening\n(2 pm - 7 pm)', 'Bedtime\n(8 pm - 5 am)']]
+            ['Medication Name', 'Dosage (mg)','I take this for' ,'Morning\n(6 am - 10am)', 'Noon\n(11 am - 1 pm)', 'Evening\n(2 pm - 7 pm)', 'Bedtime\n(8 pm - 5 am)']]
 
     for medication in db.get_medication_list(resident):
         test = []  # Create a new list for each medication
-        for diagnostic in medication.get_diagnosis_list():
-            test.append(diagnostic.name + " ")
+        for diagnostic in set(diagnosis.name for diagnosis in medication.get_diagnosis_list()):
+            test.append(diagnostic + " ")
         data.append([medication.name, medication.dosage, ', \n'.join(test), medication.morning_bool, medication.noon_bool, medication.evening_bool, medication.bedtime_bool])
 
     table = Table(data)  # Auto-adjust column widths based on content
@@ -253,26 +283,52 @@ def create_med_list_pdf(resident):
 
 # Function to determine the background color based on blood pressure values
 def get_background_color_bp(systolic, diastolic):
-
-    if 70 <= systolic <= 90 and 40 <= diastolic <= 60:
-        return '#458CCC'
-    elif 90 <= systolic <= 120 and 60 <= diastolic <= 80:
-        return '#77BB66'
-    elif 120 <= systolic <= 140 and 80 <= diastolic <= 90:
-        return '#F7A64A'
-    elif 140 <= systolic <= 160 and 90 <= diastolic <= 100:
-        return '#F07C7F'
-    elif systolic > 160 or diastolic > 100:
-        return '#F1444A'
-    
+        if 70 <= systolic <= 90 and 40 <= diastolic <= 60:
+            return '#458CCC'
+        elif 90 <= systolic <= 121 or 60 <= diastolic <= 81:
+            return '#77BB66'
+        elif 121 <= systolic <= 140 or 81 <= diastolic <= 90:
+            return '#F7A64A'
+        elif 140 <= systolic <= 160 or 90 <= diastolic <= 100:
+            return '#F07C7F'
+        elif systolic > 160 or diastolic > 100:
+            return '#F1444A'
+        
 # Function to determine the background color based on blood pressure values
 def get_background_color_glucose(glucose):
-    if 99 <= glucose <= 140:
+    if 94 <= glucose <= 140:
         return '#77BB66'
     elif 140 <= glucose <= 160:
         return '#F7A64A'
     else:
         return '#F1444A'
+    
+# Function to determine the background color based on blood pressure values
+def get_background_color_pulse(pulse):
+    if pulse <= 59:
+        return '#458CCC'
+    elif 60 <= pulse < 100:
+        return '#77BB66'
+    elif 100 <= pulse < 120:
+        return '#F7A64A'
+    elif 120 <= pulse < 150:
+        return '#F7A64A'
+    else:
+        return '#F1444A'
+    
+# Function to determine the background color based on blood pressure values
+def get_background_color_temp(temp):
+    if temp <95:
+        return '#458CCC'
+    elif 95 <= temp < 100.4:
+        return '#77BB66'
+    elif 100.4 <= temp < 104.0:
+        return '#F7A64A'
+    else:
+        return '#F1444A'
+    
+def get_background_color_medication():
+        return "#FBF719"
        
 def delete_img_graphs():
     import os
@@ -280,7 +336,7 @@ def delete_img_graphs():
     Method to delete created graphs in the medication report in order to safe space
     '''
     #Image graph names to make it easier for deletion
-    images_to_delete = ['glucose_image.png', 'bp_image.png']
+    images_to_delete = ['glucose_image.png', 'bp_image.png','pulse_image.png','temp_image.png']
     directory_path = r'website\static\images'
 
     #Deletes the designated files
@@ -297,7 +353,7 @@ def delete_img_graphs():
                 print(f'Error deleting files in {directory_path}: {e}')
 
 def create_med_report_pdf(resident):
-    # Create a buffer to store the PDF data
+   # Create a buffer to store the PDF data
     buffer = BytesIO()
 
     # Create a PDF document
@@ -312,29 +368,38 @@ def create_med_report_pdf(resident):
     story = []
 
     # Add the image
-    image_path = resident.get_image()  # Replace with the actual path to your image file
+    image_path = resident.get_image().replace("..","website")
     image = Image(image_path, width=100, height=100)  # Adjust the width and height as needed
+
+    caretaker_info = get_caretaker_resident(get_selected_resident())
 
     # Create a table with one row and four columns
     data = [
         [image,
-        Paragraph(f"<b>Full Name:</b> {resident.get_full_name()}", styles['Normal']),
-        Paragraph(f"<b>Age:</b> {resident.get_age()}", styles['Normal']),
-        Paragraph(f"<b>Date of Birth:</b> {resident.birthday}", styles['Normal']),
-        Paragraph(f"<b>Weight:</b> {0} kg", styles['Normal'])
+        Paragraph(f"<b>Full Name:</b><br/> {resident.get_full_name()}", styles['Normal']),
+        Paragraph(f"<b>Age:</b> <br/>{resident.get_age()}", styles['Normal']),
+        Paragraph(f"<b>Date of Birth:</b><br/> {resident.birthday}\n", styles['Normal']),
+        ],
+        [ None,
+        Paragraph(f"<b>Caretaker Name:</b><br/> {caretaker_info.get_full_name()}", styles['Normal']),
+        Paragraph(f"<b>Email:</b> <br/>{caretaker_info.email}", styles['Normal']),
+        Paragraph(f"<b>Phone #:</b> <br/>{caretaker_info.phone_number}", styles['Normal'])
         ]
     ]
 
-    table = Table(data, colWidths=[110, doc.width - 400, 80, 100, 70], rowHeights=[110])
+    # Calculate the maximum width for each column
+    #col_widths = [max(Paragraph(cell, styles['Normal']).wrap(100, 100)[0] for cell in col) for col in zip(*data)]
+
+    table = Table(data,rowHeights=50)
 
     # Style the table to align the image to the left and text with the upper border of the image
     table.setStyle(TableStyle([
-        ('ALIGN', (0, 0), (0, 0), 'LEFT'),
-        ('VALIGN', (0, 0), (0, 0), 'TOP'),
-        ('VALIGN', (1, 0), (4, 0), 'TOP'),
+    ('ALIGN', (0, 0), (0, 0), 'LEFT'),
+    ('VALIGN', (0, 0), (0, 0), 'TOP'),
+    ('VALIGN', (1, 0), (-1, -1), 'TOP'),
     ]))
 
-    # Add the table to the story
+    # Build the PDF document
     story.append(table)
 
 
@@ -344,14 +409,16 @@ def create_med_report_pdf(resident):
     title = Paragraph("All Medications", styles['Title'])
     # Define data dynamically using a for loop
     data = [[title,'','','','',''],
-            ['Medication Name', 'Dosage','I take this for' ,'Morning\n(6 am - 10am)', 'Noon\n(11 am - 1 pm)', 'Evening\n(2 pm - 7 pm)', 'Bedtime\n(8 pm - 5 am)']]
-
+            ['Medication Name', 'Dosage (mg)','I take this for' ,'Morning\n(6 am - 10am)', 'Noon\n(11 am - 1 pm)', 'Evening\n(2 pm - 7 pm)', 'Bedtime\n(8 pm - 5 am)']]
+    highlight = []
     for medication in db.get_medication_list(resident):
         test = []  # Create a new list for each medication
-        for diagnostic in medication.get_diagnosis_list():
-            test.append(diagnostic.name + " ")
+        for diagnostic in set(diagnosis.name for diagnosis in medication.get_diagnosis_list()):
+            test.append(diagnostic + " ")
         data.append([medication.name, medication.dosage, ', \n'.join(test), medication.morning_bool, medication.noon_bool, medication.evening_bool, medication.bedtime_bool])
-
+        current_date = datetime.now()
+        if (medication.start_date.year == current_date.year and medication.start_date.month == current_date.month):
+            highlight.append(medication.name)
     table = Table(data)  # Auto-adjust column widths based on content
 
    
@@ -372,12 +439,41 @@ def create_med_report_pdf(resident):
     ('FONTSIZE', (0, 0), (-1, -1), 9),  # Set the font size for the entire table
     ]))
 
+    # Modify the background color based on medication values
+    for i, row in enumerate(data[2:]):
+        background_color = None
+        if row[0] in highlight:
+            background_color = get_background_color_medication()
+        if background_color:
+            table.setStyle(TableStyle([
+                ('BACKGROUND', (0, i + 2), (-1, i + 2), background_color),
+            ]))
+
     story.append(table)
 
     # Create a Spacer to separate the table from the footer note
     footer_note = Paragraph("<font color='#888888'>Displays medication intake analysis, not the prescribed one.</font>", styles['Normal'])
 
+
+     # Create a new table for the legend
+    legend_data = [
+        ["Legend"],
+        [f"Medication Started in {datetime.now().strftime('%B')}"],
+    ]
+
+    legend_table0 = Table(legend_data)
+    # Set the style for the legend table to show grid lines
+    legend_table0.setStyle(TableStyle([
+        ('GRID', (0, 0), (-1, -1), 1, colors.black),  # Add grid lines for all cells
+        ('SPAN', (0, 0), (-1, 0)),
+        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),  # Make the first row bold
+        ('BACKGROUND', (0, 0), (-1, 0), "#CCCCCC"),  # Set background color of the second row to "#CCCCCC"
+        ('BACKGROUND', (0, 1), (0, 1), "#FBF719"),  # Change background color of the first cell in the second row
+
+    ]))
     story.append(footer_note)
+    story.append(Spacer(1,20))
+    story.append(legend_table0)
     # Add a page break to start a new page
     story.append(PageBreak())
 
@@ -388,8 +484,8 @@ def create_med_report_pdf(resident):
 
      # Create a new table for blood pressure data
     bp_data = [
-        ["Blood Pressure & Heart Rate Readings"],
-        ["Date/Time", "Systolic", "Diastolic","Pulse"], # Leave placeholders for the latest readings
+        ["Blood Pressure Readings"],
+        ["Date/Time", "Systolic (mmHg)", "Diastolic (mmHg)"], # Leave placeholders for the latest readings
     ]
 
     # Assuming get_vitals_list_resident returns a list of vital readings
@@ -398,11 +494,11 @@ def create_med_report_pdf(resident):
     latest_readings = sorted(vitals_list, key=lambda x: x.timestamp, reverse=True)[:5]
 
     for vital in latest_readings:
-        bp_data.append([vital.timestamp, vital.systolic_blood_pressure, vital.diastolic_blood_pressure, vital.heart_rate])
+        bp_data.append([vital.timestamp, vital.systolic_blood_pressure, vital.diastolic_blood_pressure])
 
-    bp_data.append( ["Baseline", f"{resident.get_baseline([systolic.systolic_blood_pressure for systolic in get_vitals_list_resident(get_selected_resident())])}", f"{resident.get_baseline([diastolic.diastolic_blood_pressure for diastolic in resident.get_vitals_list()])}", f"{resident.get_baseline([heart_rate.heart_rate for heart_rate in resident.get_vitals_list()])}"])
+    bp_data.append( ["Baseline", f"{resident.get_baseline([systolic.systolic_blood_pressure for systolic in get_vitals_list_resident(get_selected_resident())])}", f"{resident.get_baseline([diastolic.diastolic_blood_pressure for diastolic in resident.get_vitals_list()])}"])
 
-    bp_table = Table(bp_data, colWidths=[120, 100, 100, 100])
+    bp_table = Table(bp_data, colWidths=[120, 100, 100])
     
 
     # Style the blood pressure table
@@ -474,58 +570,66 @@ def create_med_report_pdf(resident):
     import plotly.graph_objects as go
     import plotly.io as pio
 
-    # Create figure with secondary y-axis
-    fig = go.Figure()
+    # Check if graph_data is an integer
+    if isinstance(graph_data, int):
+        # Create an empty graph with tables
+        fig = go.Figure()
 
-    # Plot baseline and systolic BP on the first y-axis
-    fig.add_trace(go.Scatter(x=list(graph_data[3]), y=graph_data[4], mode='lines', name='Baseline', line=dict(color='red', dash='dash')))
-    fig.add_trace(go.Scatter(x=list(graph_data[3]), y=graph_data[7], mode='lines+markers', name='Blood Pressure', line=dict(color='blue')))
-    fig.add_trace(go.Scatter(x=graph_data[5], y=graph_data[1], mode='lines+markers', name='Exceedance Alert', line=dict(color='orange', dash='dash'), marker=dict(color='orange')))
+        # Add title
+        fig.update_layout(title='No Data Available')
 
-  # Plot medication start dates as vertical lines
-    for i, medication in enumerate(graph_data[6]):
-            fig.add_shape(go.layout.Shape(type="line",x0=i,x1=i,y0=0,y1=1,line=dict(color='gray', dash='dash'),xref="x",yref="paper"))
-            fig.add_trace(go.Scatter(x=[0],y=[120], mode='markers', marker=dict(color='gray'), name=f'Medication Start: {medication.name}'))
+    else:
+        # Create figure with secondary y-axis
+        fig = go.Figure()
+
+        # Plot baseline and systolic BP on the first y-axis
+        fig.add_trace(go.Scatter(x=list(graph_data[3]), y=graph_data[4], mode='lines', name='Baseline', line=dict(color='red', dash='dash')))
+        fig.add_trace(go.Scatter(x=list(graph_data[3]), y=graph_data[7], mode='lines+markers', name='Blood Pressure', line=dict(color='blue')))
+        fig.add_trace(go.Scatter(x=graph_data[5], y=graph_data[1], mode='lines+markers', name='Exceedance Alert', line=dict(color='orange', dash='dash'), marker=dict(color='orange')))
+
+        # Plot medication start dates as vertical lines
+        for i, medication in enumerate(graph_data[6]):
+            fig.add_shape(go.layout.Shape(type="line", x0=i, x1=i, y0=0, y1=1, line=dict(color='gray', dash='dash'), xref="x", yref="paper"))
+            fig.add_trace(go.Scatter(x=[0], y=[120], mode='markers', marker=dict(color='gray'), name=f'Medication Start: {medication.name}'))
 
         # Add first y-axis labels
-    fig.update_layout(
+        fig.update_layout(
             xaxis=dict(title='Time'),
             yaxis=dict(title='Blood Pressure Levels', side='left', color='blue'),
             legend=dict(x=1.1, y=0.3, traceorder='normal', orientation='h'),
         )
 
         # Retrieve wellness data for the selected resident
-    current_wellness = [wellness for wellness in get_wellness_check_list_resident(resident)
-                        if wellness.timestamp.year == datetime.now().year and wellness.timestamp.month == datetime.now().month]
+        current_wellness = [wellness for wellness in get_wellness_check_list_resident(resident)]
 
-    # Create a twin Axes for the second y-axis
-    fig.add_trace(go.Scatter(x=list(range(len(current_wellness))), y=[wellness.rating for wellness in current_wellness], mode='lines+markers', name='Wellness Check', line=dict(color='green'), yaxis='y2'))
+        # Create a twin Axes for the second y-axis
+        fig.add_trace(go.Scatter(x=list(range(len(current_wellness))), y=[wellness.rating for wellness in current_wellness], mode='lines+markers', name='Wellness Check', line=dict(color='green'), yaxis='y2'))
 
-    fig.update_layout(
-        yaxis2=dict(title='Wellness Check', overlaying='y', side='right', color='green'),
-    )
+        fig.update_layout(
+            yaxis2=dict(title='Wellness Check', overlaying='y', side='right', color='green'),
+        )
 
+        # Add title and grid
+        fig.update_layout(
+            title='Blood Pressure and Wellness Check Correlation',
+            title_x=0.2,
+            showlegend=True,
+        )
 
-    # Add title and grid
-    fig.update_layout(
-        title='Blood Pressure and Wellness Check Correlation',
-        title_x = 0.2,
-        showlegend=True,
-       # grid=dict(True),
-    )
-    graph_image_path = r"website\static\images\bp_image.png" # Replace with the actual path where you want to save the image
+    # Save the image
+    graph_image_path = r"website\static\images\bp_image.png"  # Replace with the actual path where you want to save the image
     pio.write_image(fig, graph_image_path)
 
     # Add content for the second page (you can customize this according to your needs)
     second_page_content = [
         bp_table,
-        Spacer(1,20),
+        Spacer(1, 20),
         legend_table,
-        Spacer(1,10),
-        Paragraph(get_analytics_msg("Blood Pressure"), centered_style),
-        Image(graph_image_path, width=600, height=290),
+        Spacer(1, 10),
     ]
-
+    analytics_paragraphs = get_analytics_msg("Blood Pressure", graph_data)
+    second_page_content.extend(analytics_paragraphs)
+    second_page_content.append(Image(graph_image_path, width=600, height=290))
     # Add the second page content to the story
     story.extend(second_page_content)
 
@@ -536,7 +640,7 @@ def create_med_report_pdf(resident):
      # Create a new table for blood pressure data
     glucose_data = [
         ["Glucose Readings"],
-        ["Date/Time", "Glucose"], # Leave placeholders for the latest readings
+        ["Date/Time", "Glucose (mg/dL)"], # Leave placeholders for the latest readings
     ]
 
     # Add rows for the first 5 readings
@@ -602,56 +706,347 @@ def create_med_report_pdf(resident):
     import plotly.graph_objects as go
     import plotly.io as pio
 
-    # Create figure with secondary y-axis
-    fig2 = go.Figure()
+     # Check if graph_data is an integer
+    if isinstance(graph_data, int):
+        # Create an empty graph with tables
+        fig2 = go.Figure()
 
-    # Plot baseline and systolic BP on the first y-axis
-    fig2.add_trace(go.Scatter(x=list(graph_data[3]), y=graph_data[4], mode='lines', name='Baseline', line=dict(color='red', dash='dash')))
-    fig2.add_trace(go.Scatter(x=list(graph_data[3]), y=graph_data[7], mode='lines+markers', name='Glucose Levels', line=dict(color='blue')))
-    fig2.add_trace(go.Scatter(x=graph_data[5], y=graph_data[1], mode='lines+markers', name='Exceedance Alert', line=dict(color='orange', dash='dash'), marker=dict(color='orange')))
+        # Add title
+        fig2.update_layout(title='No Data Available')
 
-  # Plot medication start dates as vertical lines
-    for i, medication in enumerate(graph_data[6]):
-            fig2.add_shape(go.layout.Shape(type="line",x0=i,x1=i,y0=0,y1=1,line=dict(color='gray', dash='dash'),xref="x",yref="paper"))
-            fig2.add_trace(go.Scatter(x=[0],y=[120], mode='markers', marker=dict(color='gray'), name=f'Medication Start: {medication.name}'))
+    else:
+        # Create figure with secondary y-axis
+        fig2 = go.Figure()
+
+        # Plot baseline and systolic BP on the first y-axis
+        fig2.add_trace(go.Scatter(x=list(graph_data[3]), y=graph_data[4], mode='lines', name='Baseline', line=dict(color='red', dash='dash')))
+        fig2.add_trace(go.Scatter(x=list(graph_data[3]), y=graph_data[7], mode='lines+markers', name='Glucose', line=dict(color='blue')))
+        fig2.add_trace(go.Scatter(x=graph_data[5], y=graph_data[1], mode='lines+markers', name='Exceedance Alert', line=dict(color='orange', dash='dash'), marker=dict(color='orange')))
+
+        # Plot medication start dates as vertical lines
+        for i, medication in enumerate(graph_data[6]):
+            fig2.add_shape(go.layout.Shape(type="line", x0=i, x1=i, y0=0, y1=1, line=dict(color='gray', dash='dash'), xref="x", yref="paper"))
+            fig2.add_trace(go.Scatter(x=[0], y=[120], mode='markers', marker=dict(color='gray'), name=f'Medication Start: {medication.name}'))
 
         # Add first y-axis labels
-    fig2.update_layout(
+        fig2.update_layout(
             xaxis=dict(title='Time'),
-            yaxis=dict(title='Glucose Level', side='left', color='blue'),
+            yaxis=dict(title='Glucose Levels', side='left', color='blue'),
             legend=dict(x=1.1, y=0.3, traceorder='normal', orientation='h'),
         )
 
-    # Create a twin Axes for the second y-axis
-    fig2.add_trace(go.Scatter(x=list(range(len(current_wellness))), y=[wellness.rating for wellness in current_wellness], mode='lines+markers', name='Wellness Check', line=dict(color='green'), yaxis='y2'))
+        # Retrieve wellness data for the selected resident
+        current_wellness = [wellness for wellness in get_wellness_check_list_resident(resident)]
 
-    fig2.update_layout(
-        yaxis2=dict(title='Wellness Check', overlaying='y', side='right', color='green'),
-    )
+        # Create a twin Axes for the second y-axis
+        fig2.add_trace(go.Scatter(x=list(range(len(current_wellness))), y=[wellness.rating for wellness in current_wellness], mode='lines+markers', name='Wellness Check', line=dict(color='green'), yaxis='y2'))
 
+        fig2.update_layout(
+            yaxis2=dict(title='Wellness Check', overlaying='y', side='right', color='green'),
+        )
 
-    # Add title and grid
-    fig2.update_layout(
-        title='Glucose and Wellness Check Correlation',
-        title_x = 0.2,
-        showlegend=True,
-       # grid=dict(True),
-    )
-    graph_image_path = r"website\static\images\glucose_image.png" # Replace with the actual path where you want to save the image
+        # Add title and grid
+        fig2.update_layout(
+            title='Glucose and Wellness Check Correlation',
+            title_x=0.2,
+            showlegend=True,
+        )
+
+    # Save the image
+    graph_image_path = r"website\static\images\glucose_image.png"  # Replace with the actual path where you want to save the image
     pio.write_image(fig2, graph_image_path)
 
-     # Add content for the second page (you can customize this according to your needs)
+    # Add content for the third page (you can customize this according to your needs)
     third_page_content = [
         glucose_table,
-        Spacer(1,20),
+        Spacer(1, 20),
         legend_table1,
-        Spacer(1,10),
-        Paragraph(get_analytics_msg("Glucose"), centered_style),
-        Image(graph_image_path, width=600, height=290),
+        Spacer(1, 10),
+    ]
+    analytics_paragraphs = get_analytics_msg("Glucose", graph_data)
+    third_page_content.extend(analytics_paragraphs)
+    third_page_content.append(Image(graph_image_path, width=600, height=290))
+
+    # Add the third page content to the story
+    story.extend(third_page_content)
+      # Add a page break to start a new page
+    story.append(PageBreak())
+
+     # Create a new table for blood pressure data
+    pulse_data = [
+        ["Pulse Readings"],
+        ["Date/Time", "Pulse (BPM)"],
     ]
 
+    # Add rows for the first 5 readings
+    for vital in latest_readings:
+        pulse_data.append([vital.timestamp, vital.heart_rate])
+
+
+    pulse_data.append( ["Baseline", f"{resident.get_baseline([int(vital.heart_rate) for vital in get_vitals_list_resident(get_selected_resident())] )}"])
+
+    pulse_table = Table(pulse_data, colWidths=[120, 100, 100, 100])
+
+    pulse_table.setStyle(TableStyle([
+        ('SPAN', (0, 0), (-1, 0)),  # Span the first row across all columns
+        ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+        ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),  # Vertically center the text
+        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),  # Make the first row bold
+        ('FONTSIZE', (0, 0), (-1, 0), 14),  # Increase the font size for the first row
+        ('FONTSIZE', (0, 1), (-1, 1), 12),  # Increase the font size for the first row
+        ('FONTSIZE', (0, 2), (-1, -1), 11),  # Adjust the font size as needed
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 12),  # Add some padding to the bottom of cells
+        ('BACKGROUND', (0, 0), (-1, 0), "#003366"),  # Set background color of the first row to "#003366"
+        ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),  # Set text color of the first row to white
+        ('GRID', (0, 0), (-1, -1), 1, colors.black),  # Add grid lines for all cells
+        ('GRID', (0, -1), (-1, -1), 1, colors.black),
+        ('BACKGROUND', (0, 1), (-1, 1), "#CCCCCC"),  # Set background color of the second row to "#CCCCCC"
+        ('TEXTCOLOR', (0, 1), (-1, 1), colors.black),  # Set text color of the second row to black
+        ('FONTNAME', (0, 1), (-1, 1), 'Helvetica-Bold'),  # Make the second row bold
+         # Make the bottom row bold
+        ('FONTNAME', (0, -1), (-1, -1), 'Helvetica-Bold'),
+        # Increase the thickness of border lines for the bottom row
+        ('GRID', (0, -1), (-1, -1), 3, colors.black),
+    ]))
+    # Modify the background color based on glucose values
+    for i, row in enumerate(pulse_data[2:]):
+        pulse_value = float(row[1])
+        background_color = get_background_color_pulse(int(pulse_value))
+        if background_color:
+            pulse_table.setStyle(TableStyle([
+                ('BACKGROUND', (0, i + 2), (-1, i + 2), background_color),
+            ]))
+    
+    # Create a new table for the legend
+    legend_data2 = [
+        ["Legend","",""],
+        ["Low","Normal","Mild Tachycardia","Moderate Tachycardia","Severe Tachycardia"],
+    ]
+
+    legend_table2 = Table(legend_data2)
+    # Set the style for the legend table to show grid lines
+    legend_table2.setStyle(TableStyle([
+        ('GRID', (0, 0), (-1, -1), 1, colors.black),  # Add grid lines for all cells
+        ('SPAN', (0, 0), (-1, 0)),
+        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),  # Make the first row bold
+        ('BACKGROUND', (0, 0), (-1, 0), "#CCCCCC"),  # Set background color of the second row to "#CCCCCC"
+        ('BACKGROUND', (0, 0), (-1, 0), "#CCCCCC"),  # Set background color of the second row to "#CCCCCC"
+        ('BACKGROUND', (0, 1), (0, 1), "#458CCC"),  # Change background color of the first cell in the second row
+        ('BACKGROUND', (1, 1), (1, 1), "#77BB66"),  # Change background color of the second cell in the second row
+        ('BACKGROUND', (2, 1), (2, 1), "#F7A64A"),  # Change background color of the third cell in the second row
+        ('BACKGROUND', (3, 1), (3, 1), "#F07C7F"),  # Change background color of the fourth cell in the second row
+        ('BACKGROUND', (4, 1), (4, 1), "#F1444A"),  # Change background color of the fifth cell in the second row
+
+    ]))
+
+    graph_data = resident.check_condition(db.get_medication_list(get_selected_resident()),[int(vital.heart_rate) for vital in get_vitals_list_resident(get_selected_resident())])
+
+    import plotly.graph_objects as go
+    import plotly.io as pio
+
+    # Check if graph_data is an integer
+    if isinstance(graph_data, int):
+        # Create an empty graph with tables
+        fig3 = go.Figure()
+
+        # Add title
+        fig3.update_layout(title='No Data Available')
+
+    else:
+        # Create figure with secondary y-axis
+        fig3 = go.Figure()
+
+        # Plot baseline and systolic BP on the first y-axis
+        fig3.add_trace(go.Scatter(x=list(graph_data[3]), y=graph_data[4], mode='lines', name='Baseline', line=dict(color='red', dash='dash')))
+        fig3.add_trace(go.Scatter(x=list(graph_data[3]), y=graph_data[7], mode='lines+markers', name='Pulse', line=dict(color='blue')))
+        fig3.add_trace(go.Scatter(x=graph_data[5], y=graph_data[1], mode='lines+markers', name='Exceedance Alert', line=dict(color='orange', dash='dash'), marker=dict(color='orange')))
+
+        # Plot medication start dates as vertical lines
+        for i, medication in enumerate(graph_data[6]):
+            fig3.add_shape(go.layout.Shape(type="line", x0=i, x1=i, y0=0, y1=1, line=dict(color='gray', dash='dash'), xref="x", yref="paper"))
+            fig3.add_trace(go.Scatter(x=[0], y=[120], mode='markers', marker=dict(color='gray'), name=f'Medication Start: {medication.name}'))
+
+        # Add first y-axis labels
+        fig3.update_layout(
+            xaxis=dict(title='Time'),
+            yaxis=dict(title='Pulse Levels', side='left', color='blue'),
+            legend=dict(x=1.1, y=0.3, traceorder='normal', orientation='h'),
+        )
+
+        # Retrieve wellness data for the selected resident
+        current_wellness = [wellness for wellness in get_wellness_check_list_resident(resident)]
+
+        # Create a twin Axes for the second y-axis
+        fig3.add_trace(go.Scatter(x=list(range(len(current_wellness))), y=[wellness.rating for wellness in current_wellness], mode='lines+markers', name='Wellness Check', line=dict(color='green'), yaxis='y2'))
+
+        fig3.update_layout(
+            yaxis2=dict(title='Wellness Check', overlaying='y', side='right', color='green'),
+        )
+
+        # Add title and grid
+        fig3.update_layout(
+            title='Pulse and Wellness Check Correlation',
+            title_x=0.2,
+            showlegend=True,
+        )
+
+    graph_image_path = r"website\static\images\pulse_image.png" # Replace with the actual path where you want to save the image
+    pio.write_image(fig3, graph_image_path)
+
+     # Add content for the second page (you can customize this according to your needs)
+    fourth_page_content = [
+        pulse_table,
+        Spacer(1,20),
+        legend_table2,
+        Spacer(1,10),
+    ]
+
+    analytics_paragraphs = get_analytics_msg("Pulse", graph_data)
+    fourth_page_content.extend(analytics_paragraphs)
+    fourth_page_content.append(Image(graph_image_path, width=600, height=290))
     # Add the second page content to the story
-    story.extend(third_page_content)
+    story.extend(fourth_page_content)
+    
+    # Add a page break to start a new page
+    story.append(PageBreak())
+
+    ######################################################
+    
+     # Create a new table for blood pressure data
+    temp_data = [
+        ["Temperature Readings"],
+        ["Date/Time", "Temperature (F)"], # Leave placeholders for the latest readings
+    ]
+
+    # Add rows for the first 5 readings
+    for vital in latest_readings:
+        temp_data.append([vital.timestamp, vital.temperature])
+
+
+    temp_data.append( ["Baseline", f"{resident.get_baseline([int(vital.temperature) for vital in get_vitals_list_resident(get_selected_resident())] )}"])
+
+    temp_table = Table(temp_data, colWidths=[120, 100, 100, 100])
+
+    temp_table.setStyle(TableStyle([
+        ('SPAN', (0, 0), (-1, 0)),  # Span the first row across all columns
+        ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+        ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),  # Vertically center the text
+        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),  # Make the first row bold
+        ('FONTSIZE', (0, 0), (-1, 0), 14),  # Increase the font size for the first row
+        ('FONTSIZE', (0, 1), (-1, 1), 12),  # Increase the font size for the first row
+        ('FONTSIZE', (0, 2), (-1, -1), 11),  # Adjust the font size as needed
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 12),  # Add some padding to the bottom of cells
+        ('BACKGROUND', (0, 0), (-1, 0), "#003366"),  # Set background color of the first row to "#003366"
+        ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),  # Set text color of the first row to white
+        ('GRID', (0, 0), (-1, -1), 1, colors.black),  # Add grid lines for all cells
+        ('GRID', (0, -1), (-1, -1), 1, colors.black),
+        ('BACKGROUND', (0, 1), (-1, 1), "#CCCCCC"),  # Set background color of the second row to "#CCCCCC"
+        ('TEXTCOLOR', (0, 1), (-1, 1), colors.black),  # Set text color of the second row to black
+        ('FONTNAME', (0, 1), (-1, 1), 'Helvetica-Bold'),  # Make the second row bold
+         # Make the bottom row bold
+        ('FONTNAME', (0, -1), (-1, -1), 'Helvetica-Bold'),
+        # Increase the thickness of border lines for the bottom row
+        ('GRID', (0, -1), (-1, -1), 3, colors.black),
+    ]))
+    # Modify the background color based on glucose values
+    for i, row in enumerate(temp_data[2:]):
+        temp_value = float(row[1])
+        background_color = get_background_color_pulse(int(temp_value))
+        if background_color:
+            temp_table.setStyle(TableStyle([
+                ('BACKGROUND', (0, i + 2), (-1, i + 2), background_color),
+            ]))
+    
+    # Create a new table for the legend
+    legend_data3 = [
+        ["Legend","",""],
+        ["Hypothermia","Normal","Fever","Hyperthermia"],
+    ]
+
+    legend_table3 = Table(legend_data3)
+    # Set the style for the legend table to show grid lines
+    legend_table3.setStyle(TableStyle([
+        ('GRID', (0, 0), (-1, -1), 1, colors.black),  # Add grid lines for all cells
+        ('SPAN', (0, 0), (-1, 0)),
+        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),  # Make the first row bold
+        ('BACKGROUND', (0, 0), (-1, 0), "#CCCCCC"),  # Set background color of the second row to "#CCCCCC"
+        ('BACKGROUND', (0, 0), (-1, 0), "#CCCCCC"),  # Set background color of the second row to "#CCCCCC"
+        ('BACKGROUND', (0, 1), (0, 1), "#458CCC"),  # Change background color of the first cell in the second row
+        ('BACKGROUND', (1, 1), (1, 1), "#77BB66"),  # Change background color of the second cell in the second row
+        ('BACKGROUND', (2, 1), (2, 1), "#F7A64A"),  # Change background color of the third cell in the second row
+        ('BACKGROUND', (3, 1), (3, 1), "#F1444A"),  # Change background color of the fifth cell in the second row
+    ]))
+
+    graph_data = resident.check_condition(db.get_medication_list(get_selected_resident()),[int(vital.temperature) for vital in get_vitals_list_resident(get_selected_resident())])
+
+    import plotly.graph_objects as go
+    import plotly.io as pio
+    # Check if graph_data is an integer
+    if isinstance(graph_data, int):
+        # Create an empty graph with tables
+        fig4 = go.Figure()
+
+        # Add title
+        fig4.update_layout(title='No Data Available')
+
+    else:
+        # Create figure with secondary y-axis
+        fig4 = go.Figure()
+
+        # Plot baseline and systolic BP on the first y-axis
+        fig4.add_trace(go.Scatter(x=list(graph_data[3]), y=graph_data[4], mode='lines', name='Baseline', line=dict(color='red', dash='dash')))
+        fig4.add_trace(go.Scatter(x=list(graph_data[3]), y=graph_data[7], mode='lines+markers', name='Temperature', line=dict(color='blue')))
+        fig4.add_trace(go.Scatter(x=graph_data[5], y=graph_data[1], mode='lines+markers', name='Exceedance Alert', line=dict(color='orange', dash='dash'), marker=dict(color='orange')))
+
+        # Plot medication start dates as vertical lines
+        for i, medication in enumerate(graph_data[6]):
+            fig4.add_shape(go.layout.Shape(type="line", x0=i, x1=i, y0=0, y1=1, line=dict(color='gray', dash='dash'), xref="x", yref="paper"))
+            fig4.add_trace(go.Scatter(x=[0], y=[120], mode='markers', marker=dict(color='gray'), name=f'Medication Start: {medication.name}'))
+
+        # Add first y-axis labels
+        fig4.update_layout(
+            xaxis=dict(title='Time'),
+            yaxis=dict(title='Temperature Levels', side='left', color='blue'),
+            legend=dict(x=1.1, y=0.3, traceorder='normal', orientation='h'),
+        )
+
+        # Retrieve wellness data for the selected resident
+        current_wellness = [wellness for wellness in get_wellness_check_list_resident(resident)]
+
+        # Create a twin Axes for the second y-axis
+        fig4.add_trace(go.Scatter(x=list(range(len(current_wellness))), y=[wellness.rating for wellness in current_wellness], mode='lines+markers', name='Wellness Check', line=dict(color='green'), yaxis='y2'))
+
+        fig4.update_layout(
+            yaxis2=dict(title='Wellness Check', overlaying='y', side='right', color='green'),
+        )
+
+        # Add title and grid
+        fig4.update_layout(
+            title='Temperature and Wellness Check Correlation',
+            title_x=0.2,
+            showlegend=True,
+        )
+
+    graph_image_path = r"website\static\images\temp_image.png" # Replace with the actual path where you want to save the image
+    pio.write_image(fig4, graph_image_path)
+
+     # Add content for the second page (you can customize this according to your needs)
+    fifth_page_content = [
+        temp_table,
+        Spacer(1,20),
+        legend_table3,
+        Spacer(1,10),
+    ]
+
+    analytics_paragraphs = get_analytics_msg("Temperature", graph_data)
+    fifth_page_content.extend(analytics_paragraphs)
+    fifth_page_content.append(Image(graph_image_path, width=600, height=290))
+
+    # Add the second page content to the story
+    story.extend(fifth_page_content)
+    ######################################################
+
+
     # Build the PDF document
     doc.build(story)
 
@@ -660,6 +1055,224 @@ def create_med_report_pdf(resident):
 
     # Return the buffer containing the PDF data
     return buffer
+
+
+def concen(medication,resident):
+    from datetime import timedelta
+    import math
+    graph_data = db.get_graph10_data(medication, resident)
+    up_to = len(graph_data['DateTime'])-1
+    # Define the time intervals as datetime objects
+    if graph_data['DateTime']:
+        start_time = graph_data['DateTime'][0]  # Start time
+        end_time = graph_data['DateTime'][up_to]   # End time
+        intake_timestamps = graph_data['DateTime'][:up_to]
+    else:
+        intake_timestamps = []
+        start_time = datetime(2023, 1, 1, 0, 0)  # Start time
+        end_time = datetime(2023, 1, 7, 0, 0)
+
+    # Create a list of timestamps from start_time to end_time at the specified interval
+    time_stamps = [start_time + timedelta(hours=i) for i in range(0, int((end_time - start_time).total_seconds() // 3600))]
+    # Define the drug's half-life in hours
+    half_life_hours = 6.2  # Adjust the half-life as needed
+
+    # Calculate the decay rate based on half-life
+    decay_rate = math.log(1/2) / half_life_hours
+
+    # Define your intake timestamps as datetime objects
+    
+
+    # Create a function to calculate drug concentration over time with spikes for each intake
+    def calculate_concentration(time_stamps, decay_rate, intake_timestamps):
+        current_concentration = 0.0
+
+        # Define a time step factor to control the rate of decay
+        time_step_factor = 0.9  # Adjust as needed; smaller values result in slower decay
+        concen_before_spike = []
+        for t in time_stamps:
+            # Check if there is an intake event at this time
+            if any(
+                t.hour == ts.hour and t.day == ts.day and t.month == ts.month and t.year == ts.year
+                for ts in intake_timestamps
+            ):
+                concen_before_spike.append(current_concentration)
+                current_concentration = 100.0  # Spike to 100% when intake occurs
+
+            # Apply decay with a controlled time step
+            current_concentration *= math.exp(decay_rate * time_step_factor)
+
+        return concen_before_spike
+
+    # Calculate drug concentrations over time using the updated function
+    concentration_values = calculate_concentration(time_stamps, decay_rate, intake_timestamps)
+    return concentration_values
+
+
+def get_analytics_msg(condition,data):
+    if isinstance(data, int):
+        return [Paragraph(f"There is not enough data for an analysis. Please enter more vitals for {condition}.")]
+
+    vitals = data[7]
+    spike_index = data[5]
+    timestamps = data[8]
+    baseline = data[4]
+
+    resident = get_selected_resident()
+    date_min = min(time for time in timestamps)
+    date_max = max(time for time in timestamps)
+    medication_list = get_medication_list_resident(resident)
+
+    check_condition = "An error happened"
+    aonec_levels = 0
+    aonec_msg = ""
+    currently_taken = []
+    condition_medication_list = []
+    adherence = 0
+    mar = 0
+    expected = ""
+    status = ""
+    unit = ""
+
+    if condition == "Blood Pressure":
+        unit = " mmHg"
+        baseline_msg = str(resident.get_baseline([int(vital.systolic_blood_pressure) for vital in resident.get_vitals_list()]))
+        baseline_msg += " / " + str(resident.get_baseline([int(vital.diastolic_blood_pressure) for vital in resident.get_vitals_list()]))
+        baseline_msg += unit
+        check_condition = resident.check_blood_pressure()
+    elif condition == "Glucose":
+        unit = " mg/dL"
+        baseline_msg = str(resident.get_baseline([int(vital.glucose) for vital in resident.get_vitals_list()])) + unit
+        check_condition = resident.check_glucose()
+        aonec_levels = resident.calculate_A1C()
+        aonec_msg = f" with A1C Levels of {aonec_levels}%"
+    elif condition == "Pulse":
+        unit = " BPM"
+        baseline_msg = str(resident.get_baseline([int(vital.heart_rate) for vital in resident.get_vitals_list()])) + unit
+        check_condition = resident.check_heart_rate()
+    elif condition == "Temperature":
+        unit = "&deg;F"
+        baseline_msg = str(resident.get_baseline([int(vital.temperature) for vital in resident.get_vitals_list()]))
+        baseline_msg += unit
+        check_condition = resident.check_temp()
+
+    paragraphs = []
+
+    analytic_info = f"An analysis of <b>{resident.first_name}'s</b> data related to {condition} shows the following characteristics. <br/>For the period from <b>{date_min.strftime('%B')} {date_min.day}</b> to <b>{date_max.strftime('%B')} {date_max.day}</b> the baseline {condition} is <b>{baseline_msg}{aonec_msg}</b>.<br/>"
+    paragraphs.append(Paragraph(analytic_info))
+
+    if any(spike_index):
+        spike_msg = f"<b>Spikes</b> that could warrant investigation; at "
+        for i, index in enumerate(spike_index):
+            try:
+                spike_msg += f"{timestamps[index].strftime('%b')} {timestamps[index].day} with a value of <b>{vitals[index]}{unit}</b>"
+        
+                # Add a comma if the current item is not the last one
+                if i < len(spike_index) - 1:
+                    spike_msg += ", "
+                else:
+                    spike_msg += ".<br/><br/>"
+            except IndexError as e:
+                continue
+
+        paragraphs.append(Paragraph(spike_msg))
+
+    
+
+    for medication in medication_list:
+        current_date = datetime.now()
+        if (medication.start_date.year == current_date.year and medication.start_date.month == current_date.month):
+            currently_taken.append(medication)
+    analytic_info = f"Data analytics shows that {resident.first_name}"
+   
+    condition_medication_list = resident.medication_condition(condition, medication_list)
+
+    if any(condition_medication_list):
+        adherence_msg = f"Analyzing Medication Adherence for {condition} reveals that <br/>"
+        shown_conditions = []
+        for medication in condition_medication_list:
+            if(medication.name not in shown_conditions):
+                shown_conditions.append(medication.name)
+                adherence = db.get_graph4_data(medication, get_selected_resident())["Average"]
+                if len(adherence) >=3:
+                    mar = round(sum(adherence) / len(adherence), 2)
+                    if (mar >= 80.00):
+                        expected = "above"
+                    else:
+                        expected = "below"
+
+                    missed_dose = adherence.count(0)
+                    daily_dose = db.get_graph8_data(medication, resident)["Dose (mg)"]
+                    daily_dose_avg = round(sum(float(dose) for dose in daily_dose) / len(daily_dose),2)
+                    half_life_msg = ""
+                    if missed_dose > 0:
+                        avg_concentration = 0
+                        min_concentration = 0
+                        concentration_list = concen(medication,get_selected_resident())
+                        min_concentration = min(concentration_list)
+                        concentration_list.remove(min_concentration)
+                        if len(concentration_list) != 0:
+                            avg_concentration = round(sum(concentration_list)/len(concentration_list),2)
+                            half_life_msg = f" Since doses were missed the average <b>lowest drug concentration in the body was {avg_concentration}%</b> with the <b>lowest concentration being {min_concentration}%</b>. This could affect treatment effectiveness."
+            
+                    adherence_msg += f"<br/><b>{medication.name}</b> has {mar}% adherence. This is <b>{expected} the accepted threshold of 80%</b>. There were <b>{missed_dose}</b> missed doses during the period."
+                    adherence_msg += f" The average daily dose was <b>{daily_dose_avg} mg</b>.{half_life_msg}<br/>"
+                else:
+                    adherence_msg += f"<b>There is not enough data on {medication.name} to provide an accurate analysis</b><br/>"
+
+        paragraphs.append(Paragraph(adherence_msg))
+
+
+    increasing = all(baseline[i] <= baseline[i + 1] for i in range(len(baseline) - 1))
+    decreasing = all(baseline[i] >= baseline[i + 1] for i in range(len(baseline) - 1))
+
+    if increasing:
+        status = "not getting better with the current treatment."
+    elif decreasing:
+        status = " getting better with the current treatment."
+    else:
+        status = " stable with the current treatment"
+
+    status_msg = f"<br/>Based on the baseline the data shows that <b>{resident.first_name}'s {condition} is considered <em>{check_condition}</em></b>. "
+    status_msg += f"Historical data analysis shows that {resident.first_name} is <b>{status}</b>"
+    paragraphs.append(Paragraph(status_msg))
+
+    return paragraphs
+
+def generate_qr_with_logo(url,resident):
+    from PIL import Image
+    import requests
+    from io import BytesIO
+
+    image_url = resident.get_image()
+    # Send a GET request to the URL
+    response = requests.get(image_url)
+
+    # Load logo image
+    logo = Image.open(BytesIO(response.content))
+
+    # Resize the logo
+    basic = 100
+    width_percentage = (basic / float(logo.size[0]))
+    height_size = int((float(logo.size[1]) * float(width_percentage)))
+    logo = logo.resize((basic, height_size))
+
+    # Create QR code
+    qrc = qrcode.QRCode(error_correction=qrcode.constants.ERROR_CORRECT_H)
+    qrc.add_data(url)
+    qrc.make()
+    qr_img = qrc.make_image(fill_color='black', bg_color="#fff").convert('RGBA')
+
+    # Calculate position for logo in the center
+    position = ((qr_img.size[0] - logo.size[0]) // 2, (qr_img.size[1] - logo.size[1]) // 2)
+
+    # Paste the logo onto the QR code
+    qr_img.paste(logo, position)
+
+    return qr_img
+
+
+
 
 # Define the header method
 def header(canvas, doc, name,type):
@@ -705,7 +1318,19 @@ def header(canvas, doc, name,type):
         text_width = canvas.stringWidth(text, 'Helvetica-Bold', 16)
         canvas.drawString((page_width - text_width) / 2, page_height - 82, text)
 
-       
+        if type == "Report":
+            # Draw a gray box directly under the red line
+            canvas.setFillColor(colors.HexColor("#CCCCCC"))
+            canvas.setStrokeColor(colors.HexColor("#CCCCCC"))
+            canvas.rect(0, page_height - 250, page_width, 30, fill=True)
+            # Draw the header text in yellow color ("CareBeat")
+            canvas.setFillColor(colors.black)
+            canvas.setFont('Helvetica-Bold', 16)
+            text = "Medication List"
+            text_width = canvas.stringWidth(text, 'Helvetica-Bold', 16)
+            canvas.drawString((page_width - text_width) / 2, page_height - 240, text)
+
+
 
         # Get the current date and time
         current_datetime = datetime.now()
@@ -719,7 +1344,7 @@ def header(canvas, doc, name,type):
 
 
         
-    if current_page in [2,3,4,5]:
+    if current_page >=2:
         # Draw the header text in yellow color ("CareBeat")
         canvas.setFillColor(colors.black)
         canvas.setFont('Helvetica-Bold', 16)
@@ -730,71 +1355,49 @@ def header(canvas, doc, name,type):
 
     canvas.restoreState()
 
+def create_qr_codes(resident_list):
+    # Create a BytesIO buffer to store the PDF content
+    pdf_buffer = BytesIO()
 
-def get_analytics_msg(condition):
-    #Get the resident Object
-    resident = get_selected_resident()
+    # Create a PDF document
+    c = canvas.Canvas(pdf_buffer, pagesize=letter)
 
-    # Retrieve wellness data for the selected resident
-    current_wellness = [wellness for wellness in get_wellness_check_list_resident(resident)
-                        if wellness.timestamp.year == datetime.now().year and wellness.timestamp.month == datetime.now().month]
-    avg_wellness_check = round(sum([wellness.rating for wellness in current_wellness])/len([wellness.rating for wellness in current_wellness]),1)
+    # Loop through each resident in the list
+    for resident in resident_list:
+        # Calculate the center of the page
+        width, height = letter
+        center_x = width / 2
+        center_y = height / 2
 
-    # Extract date range for wellness analysis
-    date_min = min(wellness.timestamp for wellness in current_wellness)
-    date_max = max(wellness.timestamp for wellness in current_wellness)
+        # Generate QR code with logo
+        qr_img = generate_qr_with_logo(f"http://{config.DOMAIN}:{config.PORT}/qr-medication/{resident.id}",resident)
 
-    #Get the resident medication list
-    medication_list = get_medication_list_resident(resident)
+        # Calculate position for QR code
+        qr_x = center_x - qr_img.width / 2
+        qr_y = center_y - qr_img.height / 2
 
-    check_condition = "An error happened"
+        # Draw QR code on the PDF
+        c.drawInlineImage(qr_img, qr_x, qr_y)
 
-    if condition == "Blood Pressure":
-        baseline_msg = str(resident.get_baseline([int(vital.systolic_blood_pressure) for vital in resident.get_vitals_list()]))
-        baseline_msg += "/"+str(resident.get_baseline([int(vital.diastolic_blood_pressure) for vital in resident.get_vitals_list()]))
-        baseline_msg += " with a pulse of "+str(resident.get_baseline([int(vital.heart_rate) for vital in resident.get_vitals_list()]))
-        check_condition = resident.check_blood_pressure()
-    elif condition == "Glucose":
-        baseline_msg = str(resident.get_baseline([int(vital.glucose) for vital in resident.get_vitals_list()])) + str("mg/dL")
-        check_condition = resident.check_glucose()
+    # Draw resident name below the QR code with underline
+        c.setFont("Helvetica-Bold", 30)  # Use a bigger and bold font
+        name = resident.get_full_name()
+        text_width = c.stringWidth(name, "Helvetica-Bold", 30)
+        text_x = center_x - text_width / 2
+        text_y = center_y + qr_img.height / 2 + 10
+        text_object = c.beginText(text_x, text_y)
+        text_object.setFont("Helvetica-Bold", 30)
+        text_object.textLine(name)
+        underline_width = text_width
+        text_object.textLine("-" * int(underline_width/10))  # Add a space before the underline
+        c.drawText(text_object)
+        # Add a page break for the next resident
+        c.showPage()
 
-    # Add a paragraph about baseline condition
-    analytic_info = f"An analysis of {resident.first_name}'s data related to {condition} shows the following characteristics. For the period from {date_min.strftime('%b')} {date_min.day} to {date_max.strftime('%b')} {date_max.day} the baseline {condition} is {baseline_msg}"+ f"Data analytics shows that {resident.first_name}"
-    
-    # Get all medications currently being taken by the resident
-    currently_taken = []
-    for medication in medication_list:
-        current_date = datetime.now()
-        if (medication.start_date.year == current_date.year and medication.start_date.month == current_date.month):
-           currently_taken.append(medication)
+    # Save the PDF content to the buffer
+    c.save()
 
-    #Check of the resident is currently taking medication
-    if currently_taken:
-        #If they are taking a medication list them
-        analytic_info += " has been taking"
-        analytic_info += ", ".join([medication.name for medication in currently_taken])
-    else:
-        #If they are not taking a medication then say so
-        analytic_info += " has not started any medication"
-    
-    #Complete the message
-    analytic_info += ' during the last month.'
+    # Reset the buffer position to the beginning
+    pdf_buffer.seek(0)
 
-   
-    analytic_info += f" Also, the Average Wellness Check during the month was {avg_wellness_check} out of 5 with 1 being the best possible status and 5 the worst."
-
-
-    condition_medication_list = resident.medication_condition(condition ,medication_list)
-    #adherence = db.get_graph4_data(get_selected_resident(),bp_medication[0])["Average"]
-
-    if condition_medication_list:
-        analytic_info += f" Medication Adherence Analysis for medication taken for {condition} shows that "
-
-        for medication in condition_medication_list:
-           analytic_info+= f"{medication.name} has {90.2}% adherence.  This is above the accepted threshold of 80%. There were {1} missed doses during the period."
-           daily_dose = db.get_graph8_data(resident,medication)["Dose (mg)"]
-           analytic_info += f" The average daily dose was {sum(daily_dose)/(len(daily_dose)+1)}."
-
-    analytic_info += f" Based on the baseline values {resident.first_name}'s {condition} is considered {check_condition}. Please refer to the graphics below for a visual representation of the above discussion."
-
-    return analytic_info
+    return pdf_buffer
