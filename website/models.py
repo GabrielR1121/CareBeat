@@ -542,17 +542,11 @@ class Medication:
         return time_until_next_dose
 
     def get_string_time(self):
-        time = self.time_until_next_dose()
+        time = self.time_until_next_dose()  # Replace with your actual timedelta object
+        time = str(time).split('.')[0]
 
-        if time:
-            total_seconds = int(time.total_seconds())
-            hours, remainder = divmod(total_seconds, 3600)
-            minutes, seconds = divmod(remainder, 60)
-            formatted_time = "{:02}:{:02}:{:02}".format(hours, minutes, seconds)
-        else:
-            formatted_time = 'N/A'
+        return time
 
-        return formatted_time
     
 
     def when_taken(self):
