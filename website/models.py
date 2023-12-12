@@ -541,6 +541,20 @@ class Medication:
         time_until_next_dose = self.next_dose() - current_time
         return time_until_next_dose
 
+    def get_string_time(self):
+        time = self.time_until_next_dose()
+
+        if time:
+            total_seconds = int(time.total_seconds())
+            hours, remainder = divmod(total_seconds, 3600)
+            minutes, seconds = divmod(remainder, 60)
+            formatted_time = "{:02}:{:02}:{:02}".format(hours, minutes, seconds)
+        else:
+            formatted_time = 'N/A'
+
+        return formatted_time
+    
+
     def when_taken(self):
         """
         Caluclates when the medications are taken with consistency each day
@@ -657,17 +671,18 @@ class Medication:
     def medication_taken(self):
         total=0
         rem = 0
+        z = len(self.refill_list) * self.pill_quantity
+
         for _ in self.pills_list:
             total +=1
-        
+            if z > 0 and len(self.refill_list) <= self.refill_quantity:
+                rem = (self.pill_quantity - total) + self.pill_quantity
 
-        if (len(self.refill_list) != 0 and not self.refill_bool):
-            total = (self.pill_quantity - total) + self.pill_quantity
-            self.refill_bool = True
-            
-        else:
+
+        z = len(self.refill_list) * self.pill_quantity
+       
+        if z == 0:
             rem = self.pill_quantity - total
-
         return rem
     
     #Gets how many refills the medicaiton has left

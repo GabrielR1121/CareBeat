@@ -32,24 +32,34 @@ def createGraphOne(medication, resident):
 def createGraphTwo(medication, resident):
     """
     Method to create the pill progression chart using the amount of pills taken
-    This graph demonstrates how many pills are left in order to complete treatment in percantage values
+    This graph demonstrates how many pills are left in order to complete treatment in percentage values
     Receives: 2 objects of Medication and resident.
     Returns: The figure object with all the correct data.
     """
-    #Gets the values neeeded to create the table from the database
-    (medication_name,medication_taken,medication_total) = db.get_graph2_data(medication,resident)
-    #Creates a gauge chart
-    fig =  go.Figure(go.Indicator(
-    mode = "gauge+number",
-    value = (medication_taken/medication_total)*100,
-    domain = {'x': [0, 1], 'y': [0, 1]},
-    title = {'text': "{0} Progress".format(medication_name)},
-    gauge = {'axis': {'range': [None, 100]} }))
+    # Gets the values needed to create the table from the database
+    (medication_name, medication_taken, medication_total) = db.get_graph2_data(medication, resident)
 
-    #Update the title of the graph so its in the center
+    # Calculate the remainder to handle values greater than the total
+    if medication.medication_taken() <= medication_total:
+        med_value = medication.medication_taken() % medication_total 
+    else:
+        med_value = medication_total % medication.medication_taken() 
+        
+    print(med_value)
+
+    # Creates a gauge chart
+    fig = go.Figure(go.Indicator(
+        mode="gauge+number",
+        value=(100-(med_value / medication_total) * 100),
+        domain={'x': [0, 1], 'y': [0, 1]},
+        title={'text': "{0} Progress".format(medication_name)},
+        gauge={'axis': {'range': [None, 100]}}))
+
+    # Update the title of the graph so it's in the center
     fig.update_layout(title_x=0.5)
-    
+
     return fig
+
 
 
 
@@ -184,10 +194,16 @@ def createGraphSeven(medication, resident):
     yellow_warning = medication_total/2
     green_warning = medication_total
 
+    med_value = 0
+    if medication_total - medication_taken < 0:
+        med_value = medication.medication_taken()
+    else:
+        med_value = medication_total - medication_taken
+
     #Creates the gauge chart
     fig = go.Figure(go.Indicator(
     mode = "gauge+number",
-    value = medication_total - medication_taken,
+    value = med_value,
     domain = {'x': [0, 1], 'y': [0, 1]},
     title = {'text': "{0} Supply Forecast".format(medication_name)},
     gauge = {'axis': {'range': [None, medication_total]},

@@ -7,40 +7,119 @@
 <div class="container-fluid">
     <h2>Enter Caretaker Information</h2>
 
-    <form method="post" action="/submit-new-caretaker">
+    <form id="caretakerForm" method="post" action="/submit-new-caretaker" onsubmit="return validateForm();">
         <div class="form-group">
             <label for="email">Email:</label>
-            <input type="email" class="form-control" name="email" required>
+            <input type="email" class="form-control" name="email" id="email" required>
         </div>
 
         <div class="form-group">
             <label for="first_name">First Name:</label>
-            <input type="text" class="form-control" name="first_name" required>
+            <input type="text" class="form-control" name="first_name" id="first_name" required>
         </div>
 
         <div class="form-group">
             <label for="initial">Initial:</label>
-            <input type="text" class="form-control" name="initial">
+            <input type="text" class="form-control" name="initial" id="initial">
         </div>
 
         <div class="form-group">
             <label for="paternal_last_name">Paternal Last Name:</label>
-            <input type="text" class="form-control" name="paternal_last_name" required>
+            <input type="text" class="form-control" name="paternal_last_name" id="paternal_last_name" required>
         </div>
 
         <div class="form-group">
             <label for="maternal_last_name">Maternal Last Name:</label>
-            <input type="text" class="form-control" name="maternal_last_name">
+            <input type="text" class="form-control" name="maternal_last_name" id="maternal_last_name">
         </div>
 
         <div class="form-group">
             <label for="phone_number">Phone Number:</label>
-            <input type="tel" class="form-control" name="phone_number" pattern="[0-9]{3}-[0-9]{3}-[0-9]{4}" required>
+            <input type="tel" class="form-control" name="phone_number" id="phone_number"
+                pattern="[0-9]{3}-[0-9]{3}-[0-9]{4}" required>
             <small class="form-text text-muted">Format: 123-456-7890</small>
         </div>
 
         <button type="submit" class="btn btn-primary">Submit</button>
     </form>
 </div>
+<script>
+    function validateForm() {
+        var email = document.getElementById("email").value;
+        var firstName = document.getElementById("first_name").value;
+        var paternalLastName = document.getElementById("paternal_last_name").value;
+        var phoneNumber = document.getElementById("phone_number").value;
+        var initial = document.getElementById("initial").value;
+        var maternalLastName = document.getElementById("maternal_last_name").value;
 
+        // Basic validation example, you can add more specific validation as needed
+        if (email === "" || firstName === "" || paternalLastName === "" || phoneNumber === "") {
+            alert("All fields are required");
+            return false;
+        }
+
+        var email_list = {{ email_list| tojson | safe
+    }};
+
+    var phone_list = {{ phone_list| tojson | safe}};
+
+
+    for (var i = 0; i < email_list.length; i++) {
+        var email_test = email_list[i];
+        var phone_test = phone_list[i];
+        if (email.toLowerCase() === email_test.toLowerCase() || phoneNumber.toLowerCase() === phone_test.toLowerCase()) {
+            alert("Caretaker already created");
+            return false;
+        }
+    }
+
+
+    // Additional validation checks
+    if (email.length > 90) {
+        alert("Email cannot be more than 90 characters");
+        return false;
+    }
+
+    if (firstName.length > 30 || !isAlphaCharacters(firstName)) {
+        alert("First Name cannot be more than 30 characters and should contain only letters");
+        return false;
+    }
+
+    if (initial.length > 1 || !isAlphaCharacters(initial)) {
+        alert("Initial cannot be longer than a single character and should contain only letters");
+        return false;
+    }
+
+    if (paternalLastName.length > 30 || !isAlphaCharacters(paternalLastName)) {
+        alert("Paternal Last Name cannot be more than 30 characters and should contain only letters");
+        return false;
+    }
+
+    if (maternalLastName.length > 30 || !isAlphaCharacters(maternalLastName)) {
+        alert("Maternal Last Name cannot be more than 30 characters and should contain only letters");
+        return false;
+    }
+
+    if (phoneNumber.length !== 12 || !isValidPhoneNumber(phoneNumber)) {
+        alert("Invalid phone number format. Please use the format: 123-456-7890");
+        return false;
+    }
+
+    // If you have a "phone provider" field, add validation here
+
+    // If all validation passes, submit the form
+    return true;
+    }
+
+    function isValidPhoneNumber(phoneNumber) {
+        // Add your validation logic for the phone number field
+        // For example, you might check if it matches the format 123-456-7890
+        return /^[0-9]{3}-[0-9]{3}-[0-9]{4}$/.test(phoneNumber);
+    }
+
+    function isAlphaCharacters(value) {
+        // Check if the string contains only alphabetic characters (including spaces)
+        return /^[a-zA-Z\s]+$/.test(value);
+    }
+</script>
 {% endblock %}

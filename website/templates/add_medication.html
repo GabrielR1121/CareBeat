@@ -5,7 +5,7 @@
 {% block content %}
 
 <div class="container-fluid">
-    <form action="/add-medication" method="post">
+    <form action="/add-medication" method="post" onsubmit="return validateForm();">
         <div class="form-group">
             <label for="medicationName">Medication Name</label>
             <select class="form-control" id="medicationName" name="medicationName" required>
@@ -35,8 +35,13 @@
         </div>
 
         <div class="form-group">
+            <label for="halfLife">Half-Life</label>
+            <input type="text" class="form-control" id="halfLife" name="halfLife" required>
+        </div>
+
+        <div class="form-group">
             <label for="dosage">Dosage</label>
-            <input type="text" class="form-control" id="dosage" name="dosage" required>
+            <input type="number" class="form-control" id="dosage" name="dosage" required>
         </div>
 
         <div class="form-group">
@@ -46,7 +51,7 @@
 
         <div class="form-group">
             <label for="pillFrequency">Pill Frequency</label>
-            <input type="text" class="form-control" id="pillFrequency" name="pillFrequency" required>
+            <input type="number" class="form-control" id="pillFrequency" name="pillFrequency" required>
         </div>
 
         <div class="form-group">
@@ -91,5 +96,84 @@
             $('#selectedPurposes').val(selectedValues);
         });
     });
+
+    function validateForm() {
+        var medicationName = $('#medicationName').val();
+        var medicationPurpose = $('#medicationPurpose').val();
+        var route = $('#route').val();
+        var dosage = $('#dosage').val();
+        var pillQuantity = $('#pillQuantity').val();
+        var pillFrequency = $('#pillFrequency').val();
+        var refillQuantity = $('#refillQuantity').val();
+        var startDate = $('#startDate').val();
+        var prescriptionDate = $('#prescriptionDate').val();
+        var halfLife = $('#halfLife').val();
+
+        // Validate that the "Half-Life" field contains a positive number or decimal within the range of 0 to 48 hours
+        if (!/^\d*\.?\d+$/.test(halfLife)) {
+            alert('Half-Life should only contain a positive number or decimal');
+            return false;
+        }
+
+        var halfLifeValue = parseFloat(halfLife);
+        if (halfLifeValue < 1 || halfLifeValue > 48) {
+            alert('Half-Life should be between 1 and 48 hours');
+            return false;
+        }
+
+        // Validate that the "Dosage" field contains a positive decimal value with a decimal point and at least one digit after it
+        if (!/^[1-9]\d*\.\d+$/.test(dosage)) {
+            alert('Dosage should only contain a positive decimal value with a decimal point and at least one digit after it');
+            return false;
+        }
+
+        // Validate that the "Pill Quantity" field contains only a positive integer and is not greater than 100
+        if (!/^[1-9]\d*$/.test(pillQuantity) || parseInt(pillQuantity) > 100) {
+            alert('Pill Quantity should be a positive integer and not greater than 100');
+            return false;
+        }
+
+        // Validate that the "Pill Frequency" field contains only a positive integer
+        if (!/^[1-9]\d*$/.test(pillFrequency) || parseInt(pillFrequency) > 12) {
+            alert('Pill Frequency should only be a positive integer and not greater than 12');
+            return false;
+        }
+
+        // Validate that the "Refill Quantity" field contains only a single digit
+        if (!/^[0-9]\d*$/.test(refillQuantity) || parseInt(refillQuantity) > 12) {
+            alert('Refill should only be a positive integer and not greater than 12');
+            return false;
+        }
+
+        // Validate that the "Start Date" and "Prescription Date" fields contain valid date formats
+        var currentDate = new Date();
+        var oneYearAgo = new Date();
+        oneYearAgo.setFullYear(currentDate.getFullYear() - 1);
+
+        var enteredStartDate = new Date(startDate);
+        var enteredPrescriptionDate = new Date(prescriptionDate);
+
+        if (
+            isNaN(enteredStartDate.getTime()) ||
+            isNaN(enteredPrescriptionDate.getTime()) ||
+            enteredStartDate > currentDate ||
+            enteredPrescriptionDate > currentDate ||
+            enteredStartDate < oneYearAgo ||
+            enteredPrescriptionDate < oneYearAgo
+        ) {
+            alert('Invalid date format, future date, or date is more than 1 year ago');
+            return false;
+        }
+
+        // Additional validations can be added as needed
+
+        // Get the selected values and set them in the hidden input
+        var selectedValues = $('#medicationPurpose').val();
+        $('#selectedPurposes').val(selectedValues);
+
+        return true; // Allow form submission if all validations pass
+    }
+
+
 </script>
 {% endblock %}

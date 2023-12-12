@@ -33,54 +33,50 @@
 
                         <p class="card-text mb-2">
                             Pill Quantity: {{medication.medication_taken()}}/
-                            {% if medication.pill_quantity < medication.medication_taken() %} {{medication.pill_quantity
-                                + medication.pill_quantity}} {% else %} {{medication.pill_quantity}} {% endif %} </p>
+                            {{medication.pill_quantity}} </p>
 
-                                <p class="card-text mb-2">Start Date: {{ medication.start_date.date() }}</p>
-                                <p class="card-text mb-2">Diagnosis: <br>
-                                    {% for diagnosis in medication.get_diagnosis_list() | map(attribute='name') | unique
-                                    %}
-                                    {{ diagnosis }}
-                                    {% if not loop.last %}, {% endif %}
-                                    {% endfor %}
-                                </p>
-                                <p class="card-text mb-2">
-                                    Refill Quantity: {{ medication.amount_refill() }}/{{medication.refill_quantity}}
-                                    {% if medication.refill_quantity != medication.amount_refill() and
-                                    medication.refill_quantity != 0 and medication.medication_taken() <=
-                                        medication.pill_quantity*0.2 %} <span style="color: red; opacity: 1;"
-                                        data-toggle="tooltip" data-placement="top"
-                                        title="Medication is close to finishing. Please refill soon;">
-                                        &#9888;</span>
-                                        {% else %}
-                                        <span style="opacity: 0.2;" data-toggle="tooltip"
-                                            data-placement="top">&#9888;</span>
-                                        {% endif %}
-                                </p>
-                                <p class="card-text mb-2">Time to Next Dose: <br>{{ medication.time_until_next_dose() }}
-                                </p>
-
-                                <hr>
-                                {% if user.role == "Nurse" %}
-                                {% if medication.medication_taken() > 0 %}
-                                <button type="button" class="btn btn-success mb-3 rounded"
-                                    onclick="administerMedication({{ medication.id }})">
-                                    Administer Medication
-                                </button>
+                        <p class="card-text mb-2">Start Date: {{ medication.start_date.date() }}</p>
+                        <p class="card-text mb-2">Diagnosis: <br>
+                            {% for diagnosis in medication.get_diagnosis_list() | map(attribute='name') | unique
+                            %}
+                            {{ diagnosis }}
+                            {% if not loop.last %}, {% endif %}
+                            {% endfor %}
+                        </p>
+                        <p class="card-text mb-2">
+                            Refill Quantity: {{ medication.amount_refill() }}/{{medication.refill_quantity}}
+                            {% if medication.refill_quantity != medication.amount_refill() and
+                            medication.refill_quantity != 0 and medication.medication_taken() <=
+                                medication.pill_quantity*0.2 %} <span style="color: red; opacity: 1;"
+                                data-toggle="tooltip" data-placement="top"
+                                title="Medication is close to finishing. Please refill soon;">
+                                &#9888;</span>
                                 {% else %}
-                                <button type="button" class="btn btn-success mb-3 rounded" disabled
-                                    style="opacity: 0.5;">
-                                    Administer Medication
-                                </button>
+                                <span style="opacity: 0.2;" data-toggle="tooltip" data-placement="top">&#9888;</span>
                                 {% endif %}
-                                {% endif %}
+                        </p>
+                        <p class="card-text mb-2">Time to Next Dose: <br>{{ medication.get_string_time() }}
+                        </p>
 
-                                {% if medication.refill_quantity != medication.amount_refill() and
-                                medication.medication_taken()
-                                <= medication.pill_quantity*0.2 %} <button type="button"
-                                    class="btn btn-warning mb-3 rounded"
-                                    onclick="refillMedication({{ medication.id }})">Refill Medication</button>
-                                    {% endif %}
+                        <hr>
+                        {% if user.role == "Nurse" %}
+                        {% if medication.medication_taken() > 0 %}
+                        <button type="button" class="btn btn-success mb-3 rounded"
+                            onclick="administerMedication({{ medication.id }})">
+                            Administer Medication
+                        </button>
+                        {% else %}
+                        <button type="button" class="btn btn-success mb-3 rounded" disabled style="opacity: 0.5;">
+                            Administer Medication
+                        </button>
+                        {% endif %}
+                        {% endif %}
+
+                        {% if medication.refill_quantity != medication.amount_refill() and
+                        medication.medication_taken()
+                        <= medication.pill_quantity*0.2 %} <button type="button" class="btn btn-warning mb-3 rounded"
+                            onclick="refillMedication({{ medication.id }})">Refill Medication</button>
+                            {% endif %}
                     </div>
                 </div>
             </form>

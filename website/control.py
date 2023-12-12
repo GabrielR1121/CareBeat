@@ -1395,3 +1395,6 @@ def create_qr_codes(resident_list):
     pdf_buffer.seek(0)
 
     return pdf_buffer
+
+def get_care_info():
+    return db.get_caretaker_phone_email()

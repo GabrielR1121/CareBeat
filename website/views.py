@@ -8,7 +8,8 @@ from .control import (get_selected_resident,verify_id,get_selected_user,
                       insert_new_medication, insert_wellness_check,get_medication_list_resident,
                       get_all_medication_names,create_new_caretaker,create_new_resident,
                       get_resident_list,create_med_report_pdf,delete_img_graphs,
-                      create_qr_codes,add_refill_medication,get_all_diagnosis_names,)
+                      create_qr_codes,add_refill_medication,get_all_diagnosis_names,
+                      get_care_info)
 
 views = Blueprint("views", __name__)
 
@@ -38,7 +39,10 @@ def home():
 @views.route("/add-new-caretaker",methods=["GET"])
 @login_required
 def add_new_caretaker():
-    return render_template("add_new_caretaker.html")
+    data = get_care_info()
+    email_list = data[0]
+    phone_list = data[1]
+    return render_template("add_new_caretaker.html", email_list = email_list, phone_list = phone_list)
 
 #Route to submit a new caretaker
 @views.route("/submit-new-caretaker",methods=["POST"])
@@ -127,17 +131,11 @@ def medication_list():
 
             active_flags = selected_resident.get_active_flags()
 
-            # resident_BMI = float(latestVitals.weight) / (resident_height ** 2)
 
             if "Temp" in active_flags:
                 Emergency_Admin += get_selected_resident().medication_condition("Temperature", get_medication_list_resident(get_selected_resident()))
                 temp_check = True
 
-            #  if resident_BMI < min_BMI or resident_BMI > max_BMI:
-            #     weight_check = True
-
-            # confirm,spike,outliers,range_t,baseline,all,match,dump = get_selected_resident().check_condition(get_medication_list_resident(get_selected_resident()),[vital.systolic_blood_pressure for vital in get_vitals_list_resident(get_selected_resident())])
-            # if confirm:
             if any(category in active_flags for category in ["Low Blood Pressure", "Pre-Hypertension", "High: Stage 1 Hypertension", "High: Stage 2 Hypertension"]):
                 Emergency_Admin += get_selected_resident().medication_condition("Blood Pressure", get_medication_list_resident(get_selected_resident()))
                 systolic_bp_check = True

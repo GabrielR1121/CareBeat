@@ -6,7 +6,7 @@
 
 <div class="container-fluid">
     <h2>User Information Form</h2>
-    <form id="userForm" method="post" action="/submit-new-resident">
+    <form method="post" action="/submit-new-resident">
         <div class="form-row">
             <div class="form-group col-md-4">
                 <label for="first_name">First Name *</label>
@@ -32,7 +32,7 @@
             </div>
             <div class="form-group col-md-4">
                 <label for="image">Image URL</label>
-                <input type="text" class="form-control" id="image" name="image" placeholder="Image URL">
+                <input type="text" class="form-control" id="image" name="image" placeholder="Image URL" disabled>
             </div>
             <div class="form-group col-md-4">
                 <label for="birthday">Birthday *</label>
@@ -48,21 +48,76 @@
             </div>
         </div>
 
-        <button type="button" class="btn btn-primary" id="continueBtn">Continue</button>
-        <button type="button" class="btn btn-secondary" id="doneBtn">Done</button>
+        <button type="button" class="btn btn-primary" id="continueBtn" onclick="submitForm('1')">Continue</button>
+        <button type="button" class="btn btn-secondary" id="doneBtn" onclick="submitForm('2')">Done</button>
         <input type="hidden" id="submitButton" name="submit_value" value="0">
-    </form>
     </form>
 </div>
 <script>
-    document.getElementById('continueBtn').addEventListener('click', function () {
-        document.getElementById('submitButton').value = '1';
-        document.getElementById('userForm').submit();
-    });
+    function submitForm(value) {
 
-    document.getElementById('doneBtn').addEventListener('click', function () {
-        document.getElementById('submitButton').value = '2';
-        document.getElementById('userForm').submit();
-    });
+        document.getElementById('submitButton').value = value;
+
+        if (validateForm()) {
+            document.forms[0].submit();
+        }
+    }
+
+    function validateForm() {
+        var firstName = document.getElementById("first_name").value;
+        var initial = document.getElementById("initial").value;
+        var paternalLastName = document.getElementById("paternal_last_name").value;
+        var maternalLastName = document.getElementById("maternal_last_name").value;
+        var birthday = document.getElementById("birthday").value;
+        var height = document.getElementById("height").value;
+
+        // Basic validation example, you can add more specific validation as needed
+        if (firstName === "" || paternalLastName === "" || birthday === "" || height === "") {
+            alert("Required Fields Missing");
+            return false;
+        }
+
+        if (firstName.length > 30 || !isAlphaCharacters(firstName)) {
+            alert("First Name cannot be more than 30 characters and should contain only letters");
+            return false;
+        }
+
+        if (initial.length > 1 || !isAlphaCharacters(initial)) {
+            alert("Initial cannot be longer than a single character and should contain only letters");
+            return false;
+        }
+
+        if (paternalLastName.length > 30 || !isAlphaCharacters(paternalLastName)) {
+            alert("Paternal Last Name cannot be more than 30 characters and should contain only letters");
+            return false;
+        }
+
+        if (maternalLastName.length > 30 || !isAlphaCharacters(maternalLastName)) {
+            alert("Maternal Last Name cannot be more than 30 characters and should contain only letters");
+            return false;
+        }
+
+        // Validate Birthday
+        var birthdayDate = new Date(birthday);
+        var currentDate = new Date();
+        if (isNaN(birthdayDate.getTime()) || birthdayDate >= currentDate) {
+            alert("Invalid date format or future date");
+            return false;
+        }
+
+        // Validate Height
+        if (height < 2 || height > 9) {
+            alert("Invalid Height. Height should be between 2 and 9 feet.");
+            return false;
+        }
+
+        // If all validation passes, return true
+        return true;
+    }
+
+    function isAlphaCharacters(value) {
+        // Check if the string contains only alphabetic characters (including spaces)
+        return /^[a-zA-Z\s]+$/.test(value);
+    }
 </script>
 {% endblock %}
