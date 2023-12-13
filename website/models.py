@@ -665,19 +665,28 @@ class Medication:
     def medication_taken(self):
         total=0
         rem = 0
-        z = len(self.refill_list) * self.pill_quantity
+        new_q =0
+        x = self.pill_quantity * (len(self.refill_list))
 
         for _ in self.pills_list:
             total +=1
-            if z > 0 and len(self.refill_list) <= self.refill_quantity:
+
+        if total > self.pill_quantity or x > 0 :
+
+            if len(self.refill_list) == 1:
                 rem = (self.pill_quantity - total) + self.pill_quantity
+                return rem
+            new_q = total
+            rem = (x - new_q) + self.pill_quantity
+        else: 
+            new_q = self.pill_quantity
+            rem = new_q - total
 
-
-        z = len(self.refill_list) * self.pill_quantity
-       
-        if z == 0:
-            rem = self.pill_quantity - total
+        if rem <=0:
+            rem =0
+        
         return rem
+
     
     #Gets how many refills the medicaiton has left
     def refills_left(self):
