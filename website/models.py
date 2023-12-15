@@ -498,7 +498,7 @@ class Medication:
         # Set priority based on criteria
         if time_until_next_dose <= 2:  # If the next dose is within 2 hours, consider high priority
             self.priority = HIGH_PRIORITY
-        elif 2 < time_until_next_dose <= 8:  # If the next dose is within 8 hours, consider medium priority
+        elif 2 < time_until_next_dose <= 5:  # If the next dose is within 5 hours, consider medium priority
             self.priority = MEDIUM_PRIORITY
         else:
             self.priority = LOW_PRIORITY
@@ -511,6 +511,20 @@ class Medication:
             self.priority = CRITICAL_PRIORITY
         elif self.refills_left() == 0 and (self.medication_taken() ==0):
             self.priority = NO_PRIORITY
+
+
+
+    def check_critical(self):
+        if(self.priority == 0):
+            time_until_next_dose = self.time_until_next_dose().total_seconds() / 3600
+
+            if time_until_next_dose >= 5:  # If the next dose is within 5 hours, consider medium priority
+                return False
+            else:
+                return True
+        else:
+            return True
+
 
     def get_last_taken(self):
         """

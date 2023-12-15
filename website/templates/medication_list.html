@@ -60,7 +60,8 @@
 
                         <hr>
                         {% if user.role == "Nurse" %}
-                        {% if medication.medication_taken() > 0 %}
+                        {% if medication.check_critical() and (medication.priority != 3) and medication.medication_taken() >
+                        0 %}
                         <button type="button" class="btn btn-success mb-3 rounded"
                             onclick="administerMedication({{ medication.id }})">
                             Administer Medication

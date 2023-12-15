@@ -1062,8 +1062,9 @@ def concen(medication,resident):
 
     # Create a list of timestamps from start_time to end_time at the specified interval
     time_stamps = [start_time + timedelta(hours=i) for i in range(0, int((end_time - start_time).total_seconds() // 3600))]
+    
     # Define the drug's half-life in hours
-    half_life_hours = medication.half_life
+    half_life_hours = float(medication.half_life) 
 
     # Calculate the decay rate based on half-life
     decay_rate = math.log(1/2) / half_life_hours
