@@ -5,7 +5,7 @@
 /CareEnv/
 
 # Ignore the config folder inside the website directory
-/website/config/
+
 
 # Ignore the cache folder inside the website directory
 /website/__pycache__
