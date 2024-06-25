@@ -20,6 +20,7 @@ from .models import Caretaker
 from datetime import datetime
 import qrcode
 from website.config import config
+import os
 '''
 File that has all the control code. 
 All the code that is run in the views.py is created here.
@@ -360,7 +361,7 @@ def create_med_report_pdf(resident):
     story = []
 
     # Add the image
-    image_path = resident.get_image().replace("..","website")
+    image_path = os.path.abspath(os.path.join("website", "static", "images", "profile", "default.png"))
     image = Image(image_path, width=100, height=100)  # Adjust the width and height as needed
 
     caretaker_info = get_caretaker_resident(get_selected_resident())
@@ -1239,11 +1240,10 @@ def generate_qr_with_logo(url,resident):
     from io import BytesIO
 
     image_url = resident.get_image()
-    # Send a GET request to the URL
-    response = requests.get(image_url)
+
 
     # Load logo image
-    logo = Image.open(BytesIO(response.content))
+    logo = Image.open(os.path.abspath(os.path.join("website", "static", "images", "profile", "default.png")))
 
     # Resize the logo
     basic = 100
